@@ -1,0 +1,8 @@
+Debug
+Release
+ipch
+netbase.sdf
+netbase_client/Debug
+netbase_client/Release
+netbase_server/Debug
+netbase_server/Release
