@@ -79,7 +79,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\core\ack_util.h" />
+    <ClInclude Include="..\src\core\ack_utils.h" />
     <ClInclude Include="..\src\core\connection.h" />
     <ClInclude Include="..\src\core\logger.h" />
     <ClInclude Include="..\src\core\packet.h" />

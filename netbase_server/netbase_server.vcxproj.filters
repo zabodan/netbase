@@ -26,7 +26,7 @@
     <ClInclude Include="..\src\core\smart_socket.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\ack_util.h">
+    <ClInclude Include="..\src\core\ack_utils.h">
       <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>
