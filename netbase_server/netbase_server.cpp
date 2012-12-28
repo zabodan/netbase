@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "core/udp_network_manager.h"
+#include "core/smart_socket.h"
 
 using namespace core;
 

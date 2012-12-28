@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "core/udp_network_manager.h"
+#include "core/smart_socket.h"
 #include "core/logger.h"
 #include <boost/asio/placeholders.hpp>
 

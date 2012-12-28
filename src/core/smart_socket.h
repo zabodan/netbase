@@ -1,6 +1,6 @@
 #pragma once
-#include "core/udp_connection.h"
-#include "core/udp_packet_dispatcher.h"
+#include "core/connection.h"
+#include "core/packet_dispatcher.h"
 #include <map>
 
 

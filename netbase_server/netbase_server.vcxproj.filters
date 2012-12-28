@@ -4,9 +4,6 @@
     <Filter Include="core">
       <UniqueIdentifier>{06962348-2e69-43b7-a331-a7c345173332}</UniqueIdentifier>
     </Filter>
-    <Filter Include="core\net">
-      <UniqueIdentifier>{960a2262-335b-449a-81e4-f89ab2bc8d06}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -17,17 +14,17 @@
     <ClInclude Include="..\src\core\logger.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\udp_connection.h">
-      <Filter>core\net</Filter>
+    <ClInclude Include="..\src\core\connection.h">
+      <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\udp_network_manager.h">
-      <Filter>core\net</Filter>
+    <ClInclude Include="..\src\core\packet.h">
+      <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\udp_packet_base.h">
-      <Filter>core\net</Filter>
+    <ClInclude Include="..\src\core\packet_dispatcher.h">
+      <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\udp_packet_dispatcher.h">
-      <Filter>core\net</Filter>
+    <ClInclude Include="..\src\core\smart_socket.h">
+      <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -36,14 +33,14 @@
     <ClCompile Include="..\src\core\logger.cpp">
       <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\udp_connection.cpp">
-      <Filter>core\net</Filter>
+    <ClCompile Include="..\src\core\connection.cpp">
+      <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\udp_network_manager.cpp">
-      <Filter>core\net</Filter>
+    <ClCompile Include="..\src\core\packet_dispatcher.cpp">
+      <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\udp_packet_dispatcher.cpp">
-      <Filter>core\net</Filter>
+    <ClCompile Include="..\src\core\smart_socket.cpp">
+      <Filter>core</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

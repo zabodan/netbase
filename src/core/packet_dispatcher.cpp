@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "core/udp_packet_dispatcher.h"
-#include "core/udp_connection.h"
+#include "core/packet_dispatcher.h"
+#include "core/connection.h"
 
 
 namespace core {

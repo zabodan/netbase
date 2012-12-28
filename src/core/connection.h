@@ -1,5 +1,5 @@
 #pragma once
-#include "core/udp_packet_base.h"
+#include "core/packet.h"
 #include "core/logger.h"
 #include <boost/bind.hpp>
 #include <set>
@@ -18,6 +18,8 @@ namespace core {
     {
         return more_recent(p1.header().seqNum, p2.header().seqNum);
     }
+
+
 
 
     class PacketDispatcher;
