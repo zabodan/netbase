@@ -2,11 +2,13 @@
 #include <boost/asio/ip/udp.hpp>
 #include <memory>
 #include <cstdint>
+#include <boost/chrono.hpp>
 
 
 namespace core {
 
     using boost::asio::ip::udp;
+    using boost::chrono::system_clock;
 
     static const size_t cMaxUdpPacketSize = 512;
 
@@ -24,7 +26,7 @@ namespace core {
     {
     public:
 
-        Packet(uint16_t protocol)
+        explicit Packet(uint16_t protocol)
         {
             m_buffer.reserve(cMaxUdpPacketSize);
             m_buffer.resize(sizeof(PacketHeader));
@@ -38,16 +40,6 @@ namespace core {
             m_buffer.assign(data, data + len);
         }
 
-        PacketHeader& header()
-        {
-            return *reinterpret_cast<PacketHeader*>(m_buffer.data());
-        }
-
-        std::vector<uint8_t>& buffer()
-        {
-            return m_buffer;
-        }
-
         const PacketHeader& header() const
         {
             return *reinterpret_cast<const PacketHeader*>(m_buffer.data());
@@ -58,9 +50,23 @@ namespace core {
             return m_buffer;
         }
 
-    private:
+        PacketHeader& header()
+        {
+            return *reinterpret_cast<PacketHeader*>(m_buffer.data());
+        }
 
+        std::vector<uint8_t>& buffer()
+        {
+            return m_buffer;
+        }
+
+    protected:
+
+        // everything that goes across the wire is stored here
         std::vector<uint8_t> m_buffer;
     };
+
+
+    typedef std::shared_ptr<Packet> PacketPtr;
 
 }

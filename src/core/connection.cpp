@@ -8,34 +8,31 @@
 namespace core {
 
     Connection::Connection(udp::socket& socket, const udp::endpoint& peer)
-        : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0)
+        : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0), m_errorCount(0)
     {}
 
 
-    void Connection::send(Packet&& packet, bool reliable)
+    void Connection::send(const PacketPtr& packet, size_t resendLimit)
     {
-        auto& header = packet.header();
-        header.seqNum = ++m_seqNum;
-        header.ack = m_ack;
-        header.ackBits = m_ackBits;
+        m_sent.push_front(PacketExt(packet, resendLimit, ++m_seqNum, m_ack, m_ackBits));
 
         m_socket.async_send_to(
-            boost::asio::buffer(packet.buffer()), m_peer,
-            boost::bind(&Connection::handleSend, this, header.seqNum,
-            boost::asio::placeholders::error));
+            boost::asio::buffer(m_sent.front().packet->buffer()), m_peer,
+            boost::bind(&Connection::handleSend, this, m_seqNum, boost::asio::placeholders::error));
 
-        m_sent.push_front(std::make_pair(std::move(packet), reliable));
+        cDebug() << "sent packet" << m_seqNum << "with protocol" << packet->header().protocol;
     }
+
 
     // handler for logging errors during async_send_to
     void Connection::handleSend(uint16_t seqNum, const boost::system::error_code& error)
     {
         if (error)
         {
-            cError() << error.message();
+            cError() << "[send]" << error.category().name() << ":" << error.value() << ":" << error.message();
 
-            m_sent.remove_if([&seqNum](const std::pair<Packet, bool>& p){
-                return p.first.header().seqNum == seqNum;
+            m_sent.remove_if([&seqNum](const PacketExt& p){
+                return p.header().seqNum == seqNum;
             });
         }
     }
@@ -43,26 +40,23 @@ namespace core {
 
     // usually we receive packets in order, so most recent come later
     // so it makes sense to search for insertion point from most recent to oldest
-    void Connection::handleReceive(Packet&& packet)
+    void Connection::handleReceive(const PacketPtr& packet)
     {
-        processHeader(packet.header());
+        // process header
+        const PacketHeader& header = packet->header();
+        updateAcks(m_ack, m_ackBits, header.seqNum);
+        processPeerAcks(header.ack, header.ackBits);
 
         // find first packet older than this one
         auto it = m_received.begin();
         for (; it != m_received.end(); ++it)
         {
-            if (moreRecentPacket(packet, *it))
+            if (moreRecentPacket(*packet, **it))
                 break;
         }
 
         m_received.insert(it, std::move(packet));
-    }
-
-    void Connection::processHeader(const PacketHeader& header)
-    {
-        updateAcks(m_ack, m_ackBits, header.seqNum);
-
-        processPeerAcks(header.ack, header.ackBits);
+        m_errorCount = 0;
     }
 
 
@@ -74,7 +68,7 @@ namespace core {
         // for each packet in queue, starting from most recent
         for (auto it = m_sent.begin(); it != m_sent.end();)
         {
-            uint16_t seqNum = it->first.header().seqNum;
+            uint16_t seqNum = it->header().seqNum;
             if (moreRecentSeqNum(seqNum, peerAck))
             {
                 // too young to receive ack
@@ -82,23 +76,17 @@ namespace core {
                 continue;
             }
 
-            uint16_t delta = m_ack - seqNum;
-            if (delta >= 32)
+            uint16_t delta = peerAck - seqNum;
+            if (delta > 32)
             {
-                // too old to receive ack
+                // this packet (it) is too old to receive ack, because all newer packets
+                // in this connection will have more recent peer ack
                 for (; it != m_sent.end();)
                 {
-                    // async resend, will add this packet in front of the queue
-                    // note: will not invalidate list::iterator
-
-                    if (it->second)
-                    {
-                        send(std::move(it->first), true);
-                    }
-
+                    if (it->resendLimit > 0)
+                        send(it->packet, it->resendLimit - 1);
                     it = m_sent.erase(it);
                 }
-
                 break;
             }
 

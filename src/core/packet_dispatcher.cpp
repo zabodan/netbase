@@ -13,9 +13,9 @@ namespace core {
 
 
     // notify all listeners of this protocol
-    void PacketDispatcher::dispatchPacket(const Connection& conn, const Packet& packet) const
+    void PacketDispatcher::dispatchPacket(const Connection& conn, const PacketPtr& packet) const
     {
-        uint16_t protocol = packet.header().protocol;
+        uint16_t protocol = packet->header().protocol;
         auto it = m_listeners.lower_bound(protocol);
         auto ie = m_listeners.upper_bound(protocol);
 

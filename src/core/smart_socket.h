@@ -17,7 +17,7 @@ namespace core {
 
         const ConnectionPtr& connect(const udp::endpoint& remote);
 
-        void sendEveryone(Packet&& packet, bool reliable = false);
+        void sendEveryone(const PacketPtr& packet, size_t resendLimit = 0);
 
 
         void registerListener(uint16_t protocol, const PacketListenerPtr& listener);

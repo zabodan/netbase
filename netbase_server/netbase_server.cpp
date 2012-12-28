@@ -14,9 +14,9 @@ public:
 
 protected:
 
-    void receive(const Connection& conn, const Packet& packet)override
+    void receive(const Connection& conn, const PacketPtr& packet)override
     {
-        const auto& header = packet.header();
+        const PacketHeader& header = packet->header();
         cDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
 
         received = true;
@@ -30,23 +30,26 @@ int main(int argc, char **argv)
     try
     {
         auto io_service = std::make_shared<boost::asio::io_service>();
-        SmartSocket network(io_service, 13999);
+        SmartSocket socket(io_service, 13999);
 
         auto mod_p1 = std::make_shared<ModP1>();
-        network.registerListener(1, mod_p1);
+        socket.registerListener(1, mod_p1);
 
         for (size_t tick = 0; ; ++tick)
         {
             io_service->poll();
 
             mod_p1->received = false;
-            network.dispatchReceivedPackets();
+            socket.dispatchReceivedPackets();
 
             if (mod_p1->received)
             {
-                Packet response(2);
-                network.sendEveryone(std::move(response));
+                auto packet = std::make_shared<Packet>(2);
+                socket.sendEveryone(packet);
             }
+
+            // heartbit
+            socket.sendEveryone(std::make_shared<Packet>(3));
 
             cDebug() << "tick" << tick;
             boost::this_thread::sleep_for(boost::chrono::seconds(1));

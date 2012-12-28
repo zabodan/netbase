@@ -33,8 +33,8 @@ namespace core {
         m_socket.async_receive_from(
             boost::asio::buffer(m_recvBuf), m_recvPeer,
             boost::bind(&SmartSocket::handleReceive, this,
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
     }
 
 
@@ -42,17 +42,22 @@ namespace core {
     {
         if (error)
         {
-            cError() << error.message();
-            return;
+            cError() << "[recv]" << error.category().name() << ":" << error.value() << ":" << error.message();
+            auto it = m_connections.find(m_recvPeer);
+            if (it != m_connections.end())
+            {
+                it->second->onError();
+                if (it->second->isBad())
+                {
+                    cInfo() << "connection with" << m_recvPeer << "lost";
+                }
+            }
         }
-
-        if (recvBytes < sizeof(PacketHeader))
+        else if (recvBytes < sizeof(PacketHeader))
         {
             cError() << "received packet is too small -- skipping it";
-            return;
         }
-
-        try
+        else try
         {
             ConnectionPtr& conn = m_connections[m_recvPeer];
             if (!conn)
@@ -60,7 +65,8 @@ namespace core {
                 cInfo() << "detected new incoming connection from" << m_recvPeer;
                 conn.reset(new Connection(m_socket, m_recvPeer));
             }
-            conn->handleReceive(Packet(m_recvBuf.data(), recvBytes));
+            auto packet = std::make_shared<Packet>(m_recvBuf.data(), recvBytes);
+            conn->handleReceive(packet);
         }
         catch (const std::exception& ex)
         {
@@ -84,11 +90,15 @@ namespace core {
         }
     }
 
-    void SmartSocket::sendEveryone(Packet&& packet, bool reliable)
+    void SmartSocket::sendEveryone(const PacketPtr& packet, size_t resendLimit)
     {
         for (auto it : m_connections)
         {
-            it.second->send(Packet(packet), reliable);
+            if (it.second->isBad())
+                continue;
+
+            auto clone = std::make_shared<Packet>(*packet);
+            it.second->send(clone, resendLimit);
         }
     }
 
