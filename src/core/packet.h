@@ -6,7 +6,7 @@
 
 namespace core {
 
-	using boost::asio::ip::udp;
+    using boost::asio::ip::udp;
 
     static const size_t cMaxUdpPacketSize = 512;
 

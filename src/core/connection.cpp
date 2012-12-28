@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "core/connection.h"
 #include "core/packet_dispatcher.h"
+#include "core/ack_util.h"
+#include <boost/asio/placeholders.hpp>
+
 
 namespace core {
 
@@ -12,14 +15,14 @@ namespace core {
     void Connection::send(Packet&& packet, bool reliable)
     {
         auto& header = packet.header();
-        header.seqNum = m_seqNum++;
+        header.seqNum = ++m_seqNum;
         header.ack = m_ack;
         header.ackBits = m_ackBits;
 
         m_socket.async_send_to(
             boost::asio::buffer(packet.buffer()), m_peer,
             boost::bind(&Connection::handleSend, this, header.seqNum,
-                boost::asio::placeholders::error));
+            boost::asio::placeholders::error));
 
         m_sent.push_front(std::make_pair(std::move(packet), reliable));
     }
@@ -37,18 +40,18 @@ namespace core {
         }
     }
 
-    
+
     // usually we receive packets in order, so most recent come later
     // so it makes sense to search for insertion point from most recent to oldest
     void Connection::handleReceive(Packet&& packet)
     {
         processHeader(packet.header());
-        
+
         // find first packet older than this one
         auto it = m_received.begin();
         for (; it != m_received.end(); ++it)
         {
-            if (more_recent(packet, *it))
+            if (moreRecentPacket(packet, *it))
                 break;
         }
 
@@ -57,25 +60,9 @@ namespace core {
 
     void Connection::processHeader(const PacketHeader& header)
     {
-        adjustMyAck(header.seqNum);
+        updateAcks(m_ack, m_ackBits, header.seqNum);
+
         processPeerAcks(header.ack, header.ackBits);
-    }
-
-
-    void Connection::adjustMyAck(uint16_t seqNum)
-    {
-        if (more_recent(seqNum, m_ack)) // seqNum more recent than ack
-        {
-            uint16_t delta = seqNum - m_ack;
-            m_ackBits = delta < 32 ? m_ackBits >> delta : 0;
-            m_ack = seqNum;
-        }
-        else // seqNum is older than ack
-        {
-            uint16_t delta = m_ack - seqNum;
-            if (delta < 32)
-                m_ackBits |= 1 << delta;
-        }
     }
 
 
@@ -83,12 +70,12 @@ namespace core {
     {
         // peerAck = latest seqNum that peer received
         // peerAckBits = next 32 acks after latest
-        
+
         // for each packet in queue, starting from most recent
         for (auto it = m_sent.begin(); it != m_sent.end();)
         {
             uint16_t seqNum = it->first.header().seqNum;
-            if (more_recent(seqNum, peerAck))
+            if (moreRecentSeqNum(seqNum, peerAck))
             {
                 // too young to receive ack
                 ++it;
@@ -103,7 +90,7 @@ namespace core {
                 {
                     // async resend, will add this packet in front of the queue
                     // note: will not invalidate list::iterator
-                    
+
                     if (it->second)
                     {
                         send(std::move(it->first), true);
@@ -114,7 +101,7 @@ namespace core {
 
                 break;
             }
-            
+
             if (delta == 0)
             {
                 // acknowledge this packet
@@ -123,7 +110,7 @@ namespace core {
             }
             else
             {
-                uint32_t bit = 1 << (delta - 1);
+                uint32_t bit = ackBitFromDelta(delta);
                 if ((peerAckBits & bit) == bit)
                 {
                     // acknowledge this packet
@@ -134,7 +121,7 @@ namespace core {
         }
     }
 
-    
+
     // dispatch all packets from oldest to most recent, to all active listeners
     void Connection::dispatchReceivedPackets(const PacketDispatcher& dispatcher)
     {

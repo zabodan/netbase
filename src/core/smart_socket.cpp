@@ -8,9 +8,9 @@ namespace core {
 
 
     SmartSocket::SmartSocket(const IOServicePtr& ioservice, size_t port)
-      : m_ioservice(ioservice),
-		m_localhost(udp::v4(), port),
-		m_socket(*ioservice, m_localhost)
+        : m_ioservice(ioservice),
+        m_localhost(udp::v4(), port),
+        m_socket(*ioservice, m_localhost)
     {
         startReceive();
     }
@@ -27,7 +27,7 @@ namespace core {
         return conn;
     }
 
-    
+
     void SmartSocket::startReceive()
     {
         m_socket.async_receive_from(

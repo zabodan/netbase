@@ -1,20 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="core">
-      <UniqueIdentifier>{06962348-2e69-43b7-a331-a7c345173332}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="..\src\core\logger.h">
+    <ClInclude Include="..\src\core\ack_util.h">
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\connection.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\logger.h">
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\packet.h">
@@ -26,17 +24,14 @@
     <ClInclude Include="..\src\core\smart_socket.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\ack_util.h">
-      <Filter>core</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="netbase_server.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="..\src\core\logger.cpp">
+    <ClCompile Include="unit_test.cpp" />
+    <ClCompile Include="..\src\core\connection.cpp">
       <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\connection.cpp">
+    <ClCompile Include="..\src\core\logger.cpp">
       <Filter>core</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\packet_dispatcher.cpp">
@@ -45,5 +40,10 @@
     <ClCompile Include="..\src\core\smart_socket.cpp">
       <Filter>core</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="core">
+      <UniqueIdentifier>{98d25b13-1425-4dd9-a8ea-389ac3644aa0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

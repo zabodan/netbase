@@ -18,8 +18,8 @@ namespace core {
         const ConnectionPtr& connect(const udp::endpoint& remote);
 
         void sendEveryone(Packet&& packet, bool reliable = false);
-        
-        
+
+
         void registerListener(uint16_t protocol, const PacketListenerPtr& listener);
 
         void dispatchReceivedPackets();
@@ -33,7 +33,7 @@ namespace core {
 
         IOServicePtr m_ioservice;
         udp::endpoint m_localhost;
-		udp::socket m_socket;
+        udp::socket m_socket;
 
         std::array<uint8_t, cMaxUdpPacketSize> m_recvBuf;
         udp::endpoint m_recvPeer;

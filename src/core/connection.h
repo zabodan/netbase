@@ -8,20 +8,6 @@
 namespace core {
 
 
-    inline bool more_recent(uint16_t a, uint16_t b)
-    {
-        static const uint16_t mid = std::numeric_limits<uint16_t>::max() / 2;
-        return a - b < mid;
-    }
-
-    inline bool more_recent(const Packet& p1, const Packet& p2)
-    {
-        return more_recent(p1.header().seqNum, p2.header().seqNum);
-    }
-
-
-
-
     class PacketDispatcher;
 
 
@@ -49,8 +35,6 @@ namespace core {
         void handleSend(uint16_t seqNum, const boost::system::error_code& error);
 
         void processHeader(const PacketHeader& header);
-
-        void adjustMyAck(uint16_t seqNum);
 
         void processPeerAcks(uint16_t peerAck, uint32_t peerAckBits);
 

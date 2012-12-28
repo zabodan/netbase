@@ -7,3 +7,5 @@ netbase_client/Debug
 netbase_client/Release
 netbase_server/Debug
 netbase_server/Release
+unit_test/Debug
+unit_test/Release

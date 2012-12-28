@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{07E89AB2-6C6D-425C-B917-ED2E9B66FC25}</ProjectGuid>
+    <ProjectGuid>{AE7444F4-E8BC-4497-A477-E02A09397322}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>netbase_server</RootNamespace>
+    <RootNamespace>unit_test</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -93,11 +93,11 @@
     <ClCompile Include="..\src\core\logger.cpp" />
     <ClCompile Include="..\src\core\packet_dispatcher.cpp" />
     <ClCompile Include="..\src\core\smart_socket.cpp" />
-    <ClCompile Include="netbase_server.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="unit_test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netbase_server", "netbase_s
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netbase_client", "netbase_client\netbase_client.vcxproj", "{6ACF63C9-EE98-44E2-A49D-6975FD68403B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_test", "unit_test\unit_test.vcxproj", "{AE7444F4-E8BC-4497-A477-E02A09397322}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,10 @@ Global
 		{6ACF63C9-EE98-44E2-A49D-6975FD68403B}.Debug|Win32.Build.0 = Debug|Win32
 		{6ACF63C9-EE98-44E2-A49D-6975FD68403B}.Release|Win32.ActiveCfg = Release|Win32
 		{6ACF63C9-EE98-44E2-A49D-6975FD68403B}.Release|Win32.Build.0 = Release|Win32
+		{AE7444F4-E8BC-4497-A477-E02A09397322}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AE7444F4-E8BC-4497-A477-E02A09397322}.Debug|Win32.Build.0 = Debug|Win32
+		{AE7444F4-E8BC-4497-A477-E02A09397322}.Release|Win32.ActiveCfg = Release|Win32
+		{AE7444F4-E8BC-4497-A477-E02A09397322}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
