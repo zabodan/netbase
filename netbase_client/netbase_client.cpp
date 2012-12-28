@@ -1,11 +1,7 @@
-// netbase_client.cpp : Defines the entry point for the console application.
-//
+﻿#include "stdafx.h"
+#include "core/udp_network_manager.h"
 
-#include "stdafx.h"
-
-
-using boost::asio::ip::udp;
-using namespace std;
+using namespace core;
 
 
 int main(int argc, char **argv)
@@ -14,50 +10,26 @@ int main(int argc, char **argv)
 
 	try
 	{
-		boost::asio::io_service io_service;
+		auto io_service = std::make_shared<boost::asio::io_service>();
+        UdpNetworkManager network(io_service, 0);
 
-		udp::resolver resolver(io_service);
-		udp::resolver::query query(udp::v4(), "localhost", "13999");
-		udp::endpoint receiver_endpoint = *resolver.resolve(query);
+		udp::resolver resolver(*io_service);
+		udp::resolver::query serverQuery(udp::v4(), "localhost", "13999");
 
-		cout << "resolved server as " << receiver_endpoint.address() << " : " << receiver_endpoint.port() << endl;
+        auto conn = network.connect(*resolver.resolve(serverQuery));
 
-		udp::socket socket(io_service);
-		socket.open(udp::v4());
-		socket.non_blocking(true);
+        for (size_t tick = 0; tick < 25; ++tick)
+        {
+            UdpPacketBase packet(1);
+            conn->send(std::move(packet));
 
-		for (size_t tick = 0; tick < 25; ++tick)
-		{
-			boost::array<char, 1> send_buf  = {{ 0 }};
-			boost::system::error_code error;
-			socket.send_to(boost::asio::buffer(send_buf), receiver_endpoint);
-
-			cout << "tick" << endl;
-
-			boost::array<char, 1024> recv_buf;
-			udp::endpoint sender_endpoint;
-
-			size_t len;
-			while ((len = socket.receive_from(boost::asio::buffer(recv_buf), sender_endpoint, 0, error)) > 0)
-			{
-				if (error && error != boost::asio::error::message_size)
-					throw boost::system::system_error(error);
-
-				cout << "received message: ";
-				cout.write(recv_buf.data(), len);
-				cout << endl;
-			}
-
-			boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-		}
-	}
-	catch (const boost::system::system_error& e)
-	{
-		cerr << "[" << e.code() << "] " << e.what() << endl;
+            cDebug() << "tick";
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
+        }
 	}
 	catch (const std::exception& e)
 	{
-		cerr << "error: " << e.what() << endl;
+		cError() << e.what();
 	}
 
 	return 0;

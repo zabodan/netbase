@@ -1,59 +1,61 @@
-// netbase_server.cpp : Defines the entry point for the console application.
-//
-
 #include "stdafx.h"
+#include "core/udp_network_manager.h"
 
-using boost::asio::ip::udp;
-using namespace std;
+using namespace core;
 
+
+class ModP1 : public IUdpPacketListener
+{
+public:
+
+    ModP1() : received(false) {}
+
+    bool received;
+
+protected:
+
+    void receive(const UdpConnection& conn, const UdpPacketBase& packet)override
+    {
+        const auto& header = packet.header();
+        cDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
+
+        received = true;
+    }
+};
 
 int main(int argc, char **argv)
 {
 	std::locale::global(std::locale("rus"));
 
-	try
-	{
-		boost::asio::io_service io_service;
+    try
+    {
+        auto io_service = std::make_shared<boost::asio::io_service>();
+        UdpNetworkManager network(io_service, 13999);
 
-		udp::socket socket(io_service, udp::endpoint(udp::v4(), 13999));
-		socket.non_blocking(true);
+        auto mod_p1 = std::make_shared<ModP1>();
+        network.registerListener(1, mod_p1);
 
-		size_t packed_id = 0;
-		for (size_t tick = 0;; ++tick)
-		{
-			udp::endpoint remote_endpoint;
-			vector<unsigned char> buf(1024);
-			boost::system::error_code error;
-				
-			size_t received;
-			while ((received = socket.receive_from(boost::asio::buffer(buf), remote_endpoint, 0, error)) > 0)
-			{
-				if (error && error != boost::asio::error::message_size)
-					throw boost::system::system_error(error);
+        for (size_t tick = 0; ; ++tick)
+        {
+            io_service->poll();
 
-				stringstream ss;
-				ss << "packet " << packed_id++;
-				string message = ss.str();
+            mod_p1->received = false;
+            network.dispatchReceivedPackets();
 
-				boost::system::error_code ignored_error;
-				socket.send_to(boost::asio::buffer(message), remote_endpoint, 0, ignored_error);
+            if (mod_p1->received)
+            {
+                UdpPacketBase response(2);
+                network.sendEveryone(std::move(response));
+            }
 
-				cout << "responding to " << remote_endpoint.address() << ":" << remote_endpoint.port() << endl;
-			}
-
-			cout << "tick " << tick << endl;
-			boost::this_thread::sleep_for(boost::chrono::seconds(1));
-		}
-
-	}
-	catch (const boost::system::system_error& e)
-	{
-		cerr << "[" << e.code() << "] " << e.what() << endl;
-	}
-	catch (const std::exception& e)
-	{
-		cerr << "error: " << e.what() << endl;
-	}
+            cDebug() << "tick" << tick;
+            boost::this_thread::sleep_for(boost::chrono::seconds(1));
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        cError() << ex.what();
+    }
 
 	return 0;
 }

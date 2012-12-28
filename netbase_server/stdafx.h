@@ -13,5 +13,4 @@
 #include <boost/date_time.hpp>
 #include <boost/thread.hpp>
 
-#include <iostream>
 #include <string>
