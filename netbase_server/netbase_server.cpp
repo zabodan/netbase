@@ -4,7 +4,7 @@
 using namespace core;
 
 
-class ModP1 : public IUdpPacketListener
+class ModP1 : public IPacketListener
 {
 public:
 
@@ -14,7 +14,7 @@ public:
 
 protected:
 
-    void receive(const UdpConnection& conn, const UdpPacketBase& packet)override
+    void receive(const Connection& conn, const Packet& packet)override
     {
         const auto& header = packet.header();
         cDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     try
     {
         auto io_service = std::make_shared<boost::asio::io_service>();
-        UdpNetworkManager network(io_service, 13999);
+        SmartSocket network(io_service, 13999);
 
         auto mod_p1 = std::make_shared<ModP1>();
         network.registerListener(1, mod_p1);
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
             if (mod_p1->received)
             {
-                UdpPacketBase response(2);
+                Packet response(2);
                 network.sendEveryone(std::move(response));
             }
 

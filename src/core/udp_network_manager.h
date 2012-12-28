@@ -4,24 +4,23 @@
 #include <map>
 
 
-namespace core
-{
+namespace core {
 
     typedef std::shared_ptr<boost::asio::io_service> IOServicePtr;
 
 
-    class UdpNetworkManager
+    class SmartSocket
     {
     public:
 
-        UdpNetworkManager(const IOServicePtr& ioservice, size_t port);
+        SmartSocket(const IOServicePtr& ioservice, size_t port);
 
-        const UdpConnectionPtr& connect(const udp::endpoint& remote);
+        const ConnectionPtr& connect(const udp::endpoint& remote);
 
-        void sendEveryone(UdpPacketBase&& packet, bool reliable = false);
+        void sendEveryone(Packet&& packet, bool reliable = false);
         
         
-        void registerListener(uint16_t protocol, const UdpPacketListenerPtr& listener);
+        void registerListener(uint16_t protocol, const PacketListenerPtr& listener);
 
         void dispatchReceivedPackets();
 
@@ -34,13 +33,14 @@ namespace core
 
         IOServicePtr m_ioservice;
         udp::endpoint m_localhost;
-        SocketPtr m_socket;
+		udp::socket m_socket;
 
         std::array<uint8_t, cMaxUdpPacketSize> m_recvBuf;
         udp::endpoint m_recvPeer;
 
-        std::map<udp::endpoint, UdpConnectionPtr> m_connections;
-        UdpPacketDispatcher m_dispatcher;
+        std::map<udp::endpoint, ConnectionPtr> m_connections;
+        PacketDispatcher m_dispatcher;
     };
 
 }
+

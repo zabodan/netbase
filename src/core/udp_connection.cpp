@@ -2,37 +2,36 @@
 #include "core/udp_connection.h"
 #include "core/udp_packet_dispatcher.h"
 
-namespace core
-{
+namespace core {
 
-    UdpConnection::UdpConnection(const SocketPtr& socket, const udp::endpoint& peer)
+    Connection::Connection(udp::socket& socket, const udp::endpoint& peer)
         : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0)
     {}
 
 
-    void UdpConnection::send(UdpPacketBase&& packet, bool reliable)
+    void Connection::send(Packet&& packet, bool reliable)
     {
         auto& header = packet.header();
         header.seqNum = m_seqNum++;
         header.ack = m_ack;
         header.ackBits = m_ackBits;
 
-        m_socket->async_send_to(
+        m_socket.async_send_to(
             boost::asio::buffer(packet.buffer()), m_peer,
-            boost::bind(&UdpConnection::handleSend, this, header.seqNum,
+            boost::bind(&Connection::handleSend, this, header.seqNum,
                 boost::asio::placeholders::error));
 
         m_sent.push_front(std::make_pair(std::move(packet), reliable));
     }
 
     // handler for logging errors during async_send_to
-    void UdpConnection::handleSend(uint16_t seqNum, const boost::system::error_code& error)
+    void Connection::handleSend(uint16_t seqNum, const boost::system::error_code& error)
     {
         if (error)
         {
             cError() << error.message();
 
-            m_sent.remove_if([&seqNum](const std::pair<UdpPacketBase, bool>& p){
+            m_sent.remove_if([&seqNum](const std::pair<Packet, bool>& p){
                 return p.first.header().seqNum == seqNum;
             });
         }
@@ -41,7 +40,7 @@ namespace core
     
     // usually we receive packets in order, so most recent come later
     // so it makes sense to search for insertion point from most recent to oldest
-    void UdpConnection::handleReceive(UdpPacketBase&& packet)
+    void Connection::handleReceive(Packet&& packet)
     {
         processHeader(packet.header());
         
@@ -56,14 +55,14 @@ namespace core
         m_received.insert(it, std::move(packet));
     }
 
-    void UdpConnection::processHeader(const UdpPacketHeader& header)
+    void Connection::processHeader(const PacketHeader& header)
     {
         adjustMyAck(header.seqNum);
         processPeerAcks(header.ack, header.ackBits);
     }
 
 
-    void UdpConnection::adjustMyAck(uint16_t seqNum)
+    void Connection::adjustMyAck(uint16_t seqNum)
     {
         if (more_recent(seqNum, m_ack)) // seqNum more recent than ack
         {
@@ -80,7 +79,7 @@ namespace core
     }
 
 
-    void UdpConnection::processPeerAcks(uint16_t peerAck, uint32_t peerAckBits)
+    void Connection::processPeerAcks(uint16_t peerAck, uint32_t peerAckBits)
     {
         // peerAck = latest seqNum that peer received
         // peerAckBits = next 32 acks after latest
@@ -137,7 +136,7 @@ namespace core
 
     
     // dispatch all packets from oldest to most recent, to all active listeners
-    void UdpConnection::dispatchReceivedPackets(const UdpPacketDispatcher& dispatcher)
+    void Connection::dispatchReceivedPackets(const PacketDispatcher& dispatcher)
     {
         // go in reverse, from oldest to most recent
         for (auto it = m_received.rbegin(); it != m_received.rend(); ++it)

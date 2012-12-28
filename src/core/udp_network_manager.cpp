@@ -4,41 +4,41 @@
 #include <boost/asio/placeholders.hpp>
 
 
-namespace core
-{
+namespace core {
 
 
-    UdpNetworkManager::UdpNetworkManager(const IOServicePtr& ioservice, size_t port)
-        : m_ioservice(ioservice), m_localhost(udp::v4(), port)
+    SmartSocket::SmartSocket(const IOServicePtr& ioservice, size_t port)
+      : m_ioservice(ioservice),
+		m_localhost(udp::v4(), port),
+		m_socket(*ioservice, m_localhost)
     {
-        m_socket.reset(new udp::socket(*ioservice, m_localhost));
         startReceive();
     }
 
 
-    const UdpConnectionPtr& UdpNetworkManager::connect(const udp::endpoint& remote)
+    const ConnectionPtr& SmartSocket::connect(const udp::endpoint& remote)
     {
-        UdpConnectionPtr& conn = m_connections[remote];
+        ConnectionPtr& conn = m_connections[remote];
         if (!conn)
         {
             cInfo() << "connecting to" << remote;
-            conn.reset(new UdpConnection(m_socket, remote));
+            conn.reset(new Connection(m_socket, remote));
         }
         return conn;
     }
 
     
-    void UdpNetworkManager::startReceive()
+    void SmartSocket::startReceive()
     {
-        m_socket->async_receive_from(
+        m_socket.async_receive_from(
             boost::asio::buffer(m_recvBuf), m_recvPeer,
-            boost::bind(&UdpNetworkManager::handleReceive, this,
+            boost::bind(&SmartSocket::handleReceive, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
     }
 
 
-    void UdpNetworkManager::handleReceive(const boost::system::error_code& error, size_t recvBytes)
+    void SmartSocket::handleReceive(const boost::system::error_code& error, size_t recvBytes)
     {
         if (error)
         {
@@ -46,7 +46,7 @@ namespace core
             return;
         }
 
-        if (recvBytes < sizeof(UdpPacketHeader))
+        if (recvBytes < sizeof(PacketHeader))
         {
             cError() << "received packet is too small -- skipping it";
             return;
@@ -54,13 +54,13 @@ namespace core
 
         try
         {
-            UdpConnectionPtr& conn = m_connections[m_recvPeer];
+            ConnectionPtr& conn = m_connections[m_recvPeer];
             if (!conn)
             {
                 cInfo() << "detected new incoming connection from" << m_recvPeer;
-                conn.reset(new UdpConnection(m_socket, m_recvPeer));
+                conn.reset(new Connection(m_socket, m_recvPeer));
             }
-            conn->handleReceive(UdpPacketBase(m_recvBuf.data(), recvBytes));
+            conn->handleReceive(Packet(m_recvBuf.data(), recvBytes));
         }
         catch (const std::exception& ex)
         {
@@ -70,13 +70,13 @@ namespace core
     }
 
 
-    void UdpNetworkManager::registerListener(uint16_t protocol, const UdpPacketListenerPtr& listener)
+    void SmartSocket::registerListener(uint16_t protocol, const PacketListenerPtr& listener)
     {
         m_dispatcher.registerListener(protocol, listener);
     }
 
 
-    void UdpNetworkManager::dispatchReceivedPackets()
+    void SmartSocket::dispatchReceivedPackets()
     {
         for (auto it : m_connections)
         {
@@ -84,11 +84,11 @@ namespace core
         }
     }
 
-    void UdpNetworkManager::sendEveryone(UdpPacketBase&& packet, bool reliable)
+    void SmartSocket::sendEveryone(Packet&& packet, bool reliable)
     {
         for (auto it : m_connections)
         {
-            it.second->send(UdpPacketBase(packet), reliable);
+            it.second->send(Packet(packet), reliable);
         }
     }
 

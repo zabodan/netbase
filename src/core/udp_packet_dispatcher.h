@@ -1,31 +1,30 @@
 #pragma once
 
-namespace core
-{
+namespace core {
 
-    class UdpConnection;
-    class UdpPacketBase;
+    class Connection;
+    class Packet;
 
 
-    class IUdpPacketListener
+    class IPacketListener
     {
     public:
-        virtual ~IUdpPacketListener() {}
-        virtual void receive(const UdpConnection& conn, const UdpPacketBase& packet) = 0;
+        virtual ~IPacketListener() {}
+        virtual void receive(const Connection& conn, const Packet& packet) = 0;
     };
 
-    typedef std::shared_ptr<IUdpPacketListener> UdpPacketListenerPtr;
+    typedef std::shared_ptr<IPacketListener> PacketListenerPtr;
 
 
-    class UdpPacketDispatcher
+    class PacketDispatcher
     {
     public:
-        void registerListener(uint16_t protocol, const UdpPacketListenerPtr& listener);
-        void dispatchPacket(const UdpConnection& conn, const UdpPacketBase& packet) const;
+        void registerListener(uint16_t protocol, const PacketListenerPtr& listener);
+        void dispatchPacket(const Connection& conn, const Packet& packet) const;
 
     private:
         // map protocol id to multiple listeners
-        std::multimap<uint16_t, UdpPacketListenerPtr> m_listeners;
+        std::multimap<uint16_t, PacketListenerPtr> m_listeners;
     };
 
 }
