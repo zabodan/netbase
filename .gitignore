@@ -1,7 +1,8 @@
 Debug
 Release
 ipch
-netbase.sdf
+*.sdf
+*.opensdf
 netbase_client/Debug
 netbase_client/Release
 netbase_server/Debug
