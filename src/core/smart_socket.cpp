@@ -2,6 +2,7 @@
 #include "core/smart_socket.h"
 #include "core/logger.h"
 #include <boost/asio/placeholders.hpp>
+#include <boost/bind.hpp>
 
 
 namespace core {
@@ -15,16 +16,26 @@ namespace core {
         startReceive();
     }
 
+    SmartSocket::~SmartSocket()
+    {
+        notifyObservers([](ISocketStateObserver& observer){ observer.onSocketShutdown(); });
+    }
 
-    const ConnectionPtr& SmartSocket::connect(const udp::endpoint& remote)
+    ConnectionPtr SmartSocket::getOrCreateConnection(const udp::endpoint& remote)
     {
         ConnectionPtr& conn = m_connections[remote];
         if (!conn)
         {
-            cInfo() << "connecting to" << remote;
-            conn.reset(new Connection(m_socket, remote));
+            conn.reset(new Connection(*this, remote));
+            //notifyObservers([&](ISocketStateObserver& observer){ observer.onConnect(conn); });
         }
         return conn;
+    }
+
+    ConnectionPtr SmartSocket::getExistingConnection(const udp::endpoint& remote)
+    {
+        auto it = m_connections.find(remote);
+        return it != m_connections.end() ? it->second : nullptr;
     }
 
 
@@ -40,33 +51,33 @@ namespace core {
 
     void SmartSocket::handleReceive(const boost::system::error_code& error, size_t recvBytes)
     {
-        if (error)
+        if (error == boost::asio::error::message_size || (!error && recvBytes < sizeof(PacketHeader)))
         {
-            cError() << "[recv]" << error.category().name() << ":" << error.value() << ":" << error.message();
-            auto it = m_connections.find(m_recvPeer);
-            if (it != m_connections.end())
-            {
-                it->second->onError();
-                if (it->second->isBad())
-                {
-                    cInfo() << "connection with" << m_recvPeer << "lost";
-                }
-            }
+            notifyObservers([=](ISocketStateObserver& observer){ observer.onBadPacketSize(m_recvPeer, recvBytes); });
         }
-        else if (recvBytes < sizeof(PacketHeader))
+        else if (error)
         {
-            cError() << "received packet is too small -- skipping it";
+            auto conn = getExistingConnection(m_recvPeer);
+            if (conn && !conn->isDead())
+                switch (error.value())
+                {
+                    case boost::asio::error::connection_aborted:
+                    case boost::asio::error::connection_refused:
+                    case boost::asio::error::connection_reset:
+                        notifyObservers([&](ISocketStateObserver& observer){ observer.onPeerDisconnect(conn); });
+                        conn->markDead(true);
+                        break;
+                
+                    default:
+                        notifyObservers([&](ISocketStateObserver& observer){ observer.onError(conn, error); });
+                        break;
+                }
         }
         else try
         {
-            ConnectionPtr& conn = m_connections[m_recvPeer];
-            if (!conn)
-            {
-                cInfo() << "detected new incoming connection from" << m_recvPeer;
-                conn.reset(new Connection(m_socket, m_recvPeer));
-            }
-            auto packet = std::make_shared<Packet>(m_recvBuf.data(), recvBytes);
-            conn->handleReceive(packet);
+            ConnectionPtr conn = getOrCreateConnection(m_recvPeer);
+            conn->handleReceive(std::make_shared<Packet>(m_recvBuf.data(), recvBytes));
+            conn->markDead(false);
         }
         catch (const std::exception& ex)
         {
@@ -76,7 +87,7 @@ namespace core {
     }
 
 
-    void SmartSocket::registerListener(uint16_t protocol, const PacketListenerPtr& listener)
+    void SmartSocket::registerProtocolListener(uint16_t protocol, const ProtocolListenerPtr& listener)
     {
         m_dispatcher.registerListener(protocol, listener);
     }
@@ -94,7 +105,7 @@ namespace core {
     {
         for (auto it : m_connections)
         {
-            if (it.second->isBad())
+            if (it.second->isDead())
                 continue;
 
             auto clone = std::make_shared<Packet>(*packet);

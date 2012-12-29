@@ -6,7 +6,7 @@
 namespace core {
 
     // register another listener for specified protocol
-    void PacketDispatcher::registerListener(uint16_t protocol, const PacketListenerPtr& listener)
+    void PacketDispatcher::registerListener(uint16_t protocol, const ProtocolListenerPtr& listener)
     {
         m_listeners.insert(std::make_pair(protocol, listener));
     }

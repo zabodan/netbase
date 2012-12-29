@@ -2,7 +2,7 @@
 #include "core/smart_socket.h"
 
 using namespace core;
-
+using namespace std::chrono;
 
 int main(int argc, char **argv)
 {
@@ -11,25 +11,29 @@ int main(int argc, char **argv)
 	try
 	{
 		auto io_service = std::make_shared<boost::asio::io_service>();
+
         SmartSocket socket(io_service, 0);
-
-		udp::resolver resolver(*io_service);
+        socket.addObserver(std::make_shared<SocketStateLogger>());
+        
+        udp::resolver resolver(*io_service);
 		udp::resolver::query serverQuery(udp::v4(), "localhost", "13999");
+        udp::endpoint server = *resolver.resolve(serverQuery);
 
-        auto conn = socket.connect(*resolver.resolve(serverQuery));
+        auto conn = socket.getOrCreateConnection(server);
 
-        for (size_t tick = 0; tick < 25; ++tick)
+        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10;
+        for (size_t tick = 0; tick < maxTicks; ++tick)
         {
             io_service->poll();
 
-            if (conn->isBad())
+            if (conn->isDead())
                 break;
 
             auto packet = std::make_shared<Packet>(1);
             conn->send(packet);
 
             cDebug() << "tick";
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
+            std::this_thread::sleep_for(milliseconds(50));
         }
 	}
 	catch (const std::exception& e)

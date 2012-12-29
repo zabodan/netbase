@@ -2,26 +2,28 @@
 #include "core/smart_socket.h"
 
 using namespace core;
+using namespace std::chrono;
 
 
-class ModP1 : public IPacketListener
+class ModP1 : public IProtocolListener, public ISocketStateObserver
 {
 public:
 
-    ModP1() : received(false) {}
+    ModP1() : receivedCount(0) {}
 
-    bool received;
+    size_t receivedCount;
 
 protected:
 
-    void receive(const Connection& conn, const PacketPtr& packet)override
+    void receive(const Connection& conn, const PacketPtr& packet) override
     {
-        const PacketHeader& header = packet->header();
-        cDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
-
-        received = true;
+        //const PacketHeader& header = packet->header();
+        //cDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
+        ++receivedCount;
     }
 };
+
+
 
 int main(int argc, char **argv)
 {
@@ -31,28 +33,42 @@ int main(int argc, char **argv)
     {
         auto io_service = std::make_shared<boost::asio::io_service>();
         SmartSocket socket(io_service, 13999);
+        socket.addObserver(std::make_shared<SocketStateLogger>());
 
         auto mod_p1 = std::make_shared<ModP1>();
-        socket.registerListener(1, mod_p1);
+        socket.registerProtocolListener(1, mod_p1);
 
-        for (size_t tick = 0; ; ++tick)
+        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10000;
+        for (size_t tick = 0; tick < maxTicks; ++tick)
         {
+            auto ts1 = system_clock::now();
+
             io_service->poll();
 
-            mod_p1->received = false;
+            auto ts2 = system_clock::now();
+            auto poll_duration = duration_cast<microseconds>(ts2 - ts1);
+            ts1 = ts2;
+
+            mod_p1->receivedCount = 0;
             socket.dispatchReceivedPackets();
 
-            if (mod_p1->received)
+            if (mod_p1->receivedCount > 0)
             {
                 auto packet = std::make_shared<Packet>(2);
                 socket.sendEveryone(packet);
             }
 
-            // heartbit
-            socket.sendEveryone(std::make_shared<Packet>(3));
+            if (tick > 0 && tick % 10 == 0)
+            {
+                static const uint16_t cHeartBitProtocol = 3;
+                socket.sendEveryone(std::make_shared<Packet>(cHeartBitProtocol));
+            }
 
-            cDebug() << "tick" << tick;
-            boost::this_thread::sleep_for(boost::chrono::seconds(1));
+            ts2 = system_clock::now();
+            auto work_duration = duration_cast<microseconds>(ts2 - ts1);
+
+            cDebug() << "tick" << tick << "poll took" << poll_duration.count() << "mks and work done in" << work_duration.count() << "mks";
+            std::this_thread::sleep_for(milliseconds(50) - poll_duration - work_duration);
         }
     }
     catch (const std::exception& ex)

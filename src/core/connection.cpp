@@ -1,14 +1,15 @@
 #include "stdafx.h"
 #include "core/connection.h"
-#include "core/packet_dispatcher.h"
+#include "core/smart_socket.h"
 #include "core/ack_utils.h"
 #include <boost/asio/placeholders.hpp>
+#include <boost/bind.hpp>
 
 
 namespace core {
 
-    Connection::Connection(udp::socket& socket, const udp::endpoint& peer)
-        : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0), m_errorCount(0)
+    Connection::Connection(SmartSocket& socket, const udp::endpoint& peer)
+        : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0), m_isDead(false)
     {}
 
 
@@ -16,11 +17,11 @@ namespace core {
     {
         m_sent.push_front(PacketExt(packet, resendLimit, ++m_seqNum, m_ack, m_ackBits));
 
-        m_socket.async_send_to(
+        m_socket.rawSocket().async_send_to(
             boost::asio::buffer(m_sent.front().packet->buffer()), m_peer,
             boost::bind(&Connection::handleSend, this, m_seqNum, boost::asio::placeholders::error));
 
-        cDebug() << "sent packet" << m_seqNum << "with protocol" << packet->header().protocol;
+        cDebug() << "sent packet" << m_seqNum << "with protocol" << packet->header().protocol << "to" << m_peer;
     }
 
 
@@ -29,17 +30,35 @@ namespace core {
     {
         if (error)
         {
-            cError() << "[send]" << error.category().name() << ":" << error.value() << ":" << error.message();
+            m_socket.notifyObservers([&](ISocketStateObserver& observer){ observer.onError(shared_from_this(), error); });
 
-            m_sent.remove_if([&seqNum](const PacketExt& p){
+            // find failed packet in m_sent queue
+            auto it = std::find_if(m_sent.begin(), m_sent.end(), [&seqNum](const PacketExt& p){
                 return p.header().seqNum == seqNum;
             });
+
+            if (it != m_sent.end())
+                removeUndeliveredPacket(it);
         }
     }
 
+    void Connection::removeUndeliveredPacket(std::list<PacketExt>::iterator& it)
+    {
+        // if we really want this packet delivered, try again
+        if (it->resendLimit > 0)
+            send(it->packet, it->resendLimit - 1);
+        it = m_sent.erase(it);
+    }
 
-    // usually we receive packets in order, so most recent come later
-    // so it makes sense to search for insertion point from most recent to oldest
+    void Connection::confirmPacketDelivery(std::list<PacketExt>::iterator& it)
+    {
+        cDebug() << "acknowledged packet" << it->header().seqNum << "for peer" << m_peer;
+        it = m_sent.erase(it);
+    }
+
+
+    // usually we receive packets in order, so most recent come later, so we search
+    // for insertion point from most recent to oldest
     void Connection::handleReceive(const PacketPtr& packet)
     {
         // process header
@@ -56,14 +75,14 @@ namespace core {
         }
 
         m_received.insert(it, std::move(packet));
-        m_errorCount = 0;
     }
 
 
+    // clean up m_sent queue, confirm delivered packets and remove (or resend) old ones
+    //   peerAck     - latest seqNum that peer received
+    //   peerAckBits - next 32 acks after latest
     void Connection::processPeerAcks(uint16_t peerAck, uint32_t peerAckBits)
     {
-        // peerAck = latest seqNum that peer received
-        // peerAckBits = next 32 acks after latest
 
         // for each packet in queue, starting from most recent
         for (auto it = m_sent.begin(); it != m_sent.end();)
@@ -79,32 +98,25 @@ namespace core {
             uint16_t delta = peerAck - seqNum;
             if (delta > 32)
             {
-                // this packet (it) is too old to receive ack, because all newer packets
-                // in this connection will have more recent peer ack
+                // this packet (it) is too old to receive ack, because all newer packets from this peer
+                // will have more recent peer ack -- so we remove (or resend) it, and all older packets too
                 for (; it != m_sent.end();)
-                {
-                    if (it->resendLimit > 0)
-                        send(it->packet, it->resendLimit - 1);
-                    it = m_sent.erase(it);
-                }
+                    removeUndeliveredPacket(it);
+
                 break;
             }
 
             if (delta == 0)
             {
-                // acknowledge this packet
-                cDebug() << "acknowledged" << seqNum;
-                it = m_sent.erase(it);
+                // peerAck == seqNum, hooraay
+                confirmPacketDelivery(it);
             }
             else
             {
+                // delta <= 32, we should check peerAckBits
                 uint32_t bit = ackBitFromDelta(delta);
                 if ((peerAckBits & bit) == bit)
-                {
-                    // acknowledge this packet
-                    cDebug() << "acknowledged" << seqNum;
-                    it = m_sent.erase(it);
-                }
+                    confirmPacketDelivery(it);
             }
         }
     }

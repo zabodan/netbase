@@ -1,14 +1,12 @@
 #pragma once
 #include <boost/asio/ip/udp.hpp>
-#include <memory>
 #include <cstdint>
-#include <boost/chrono.hpp>
 
 
 namespace core {
 
     using boost::asio::ip::udp;
-    using boost::chrono::system_clock;
+    using std::chrono::system_clock;
 
     static const size_t cMaxUdpPacketSize = 512;
 

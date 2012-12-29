@@ -1,7 +1,6 @@
 #pragma once
 #include "core/packet.h"
 #include "core/logger.h"
-#include <boost/bind.hpp>
 #include <set>
 
 
@@ -9,19 +8,20 @@ namespace core {
 
 
     class PacketDispatcher;
+    class SmartSocket;
 
 
-    class Connection
+    class Connection : public std::enable_shared_from_this<Connection>
     {
     public:
 
-        Connection(udp::socket& socket, const udp::endpoint& peer);
+        Connection(SmartSocket& socket, const udp::endpoint& peer);
 
         const udp::endpoint& peer() const { return m_peer; }
 
         void send(const PacketPtr& packet, size_t resendLimit = 0);
 
-        bool isBad() const { return m_errorCount >= 2; }
+        bool isDead() const { return m_isDead; }
 
     protected:
 
@@ -57,14 +57,21 @@ namespace core {
         // handler for logging errors during async_send_to
         void handleSend(uint16_t seqNum, const boost::system::error_code& error);
 
+        // clean up m_sent queue, confirm delivered packets and remove (or resend) old ones
         void processPeerAcks(uint16_t peerAck, uint32_t peerAckBits);
 
-        void onError() { ++m_errorCount; }
+        // mark connection dead (to be removed later), or revive (if received any packets)
+        void markDead(bool value) { m_isDead = value; }
 
+        // remove or resend packet which was considered undelivered, it = m_sent.erase(it)
+        void removeUndeliveredPacket(std::list<PacketExt>::iterator& it);
 
+        // confirm packet, compute RTT, it = m_sent.erase(it)
+        void confirmPacketDelivery(std::list<PacketExt>::iterator& it);
 
-        udp::socket& m_socket;
+        SmartSocket& m_socket;
         udp::endpoint m_peer;
+        bool m_isDead;
 
         uint16_t m_seqNum;
         uint16_t m_ack;
@@ -75,8 +82,6 @@ namespace core {
 
         // received packets placed here, recent go first
         std::list<PacketPtr> m_received;
-
-        size_t m_errorCount;
     };
 
 

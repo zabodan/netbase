@@ -7,9 +7,10 @@
 
 #include "targetver.h"
 
-#include <stdio.h>
-#include <tchar.h>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 
-
-
-// TODO: reference additional headers your program requires here
+#include <memory>
+#include <string>
+#include <chrono>
+#include <thread>

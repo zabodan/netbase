@@ -24,6 +24,12 @@
     <ClInclude Include="..\src\core\ack_utils.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\observable.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\socket_state_observer.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

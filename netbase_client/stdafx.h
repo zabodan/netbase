@@ -8,10 +8,9 @@
 #include "targetver.h"
 
 #include <boost/asio.hpp>
-#include <boost/array.hpp>
-#include <boost/chrono.hpp>
-#include <boost/date_time.hpp>
-#include <boost/thread.hpp>
+#include <boost/bind.hpp>
 
 #include <memory>
 #include <string>
+#include <chrono>
+#include <thread>
