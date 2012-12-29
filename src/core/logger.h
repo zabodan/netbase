@@ -1,9 +1,14 @@
 #pragma once
+#include "core/mpmc_queue.h"
+#include <boost/noncopyable.hpp>
 #include <sstream>
 #include <chrono>
+#include <thread>
+
 
 namespace core
 {
+
 
     template <class T> struct duration_suffix;
     template <> struct duration_suffix<std::chrono::hours>        { static const char* value() { return "h"; } };
@@ -14,7 +19,10 @@ namespace core
     template <> struct duration_suffix<std::chrono::nanoseconds>  { static const char* value() { return "ns"; } };
 
 
-    class LoggerBase
+    typedef std::chrono::system_clock::time_point SCTimePoint;
+
+
+    class LogBase : private boost::noncopyable
     {
     public:
 
@@ -28,26 +36,15 @@ namespace core
             Fatal
         };
 
-        LoggerBase(Severity severity)
+        LogBase(Severity severity)
             : m_severity(severity)
         {
         }
 
-        LoggerBase(LoggerBase&& rhs)
-            : m_severity(rhs.m_severity), m_buffer(std::move(rhs.m_buffer))
-        {
-            rhs.m_severity = None;
-        }
-
-        ~LoggerBase();
-
-        static void SetLogStream(std::ostream* os)
-        {
-            s_out = os;
-        }
+        ~LogBase();
 
         template <class T, class P>
-        LoggerBase& operator<<(const std::chrono::duration<T,P>& value)
+        LogBase& operator<<(const std::chrono::duration<T,P>& value)
         {
             typedef std::chrono::duration<T,P> dtype;
             m_buffer << " " << value.count() << duration_suffix<dtype>::value();
@@ -55,7 +52,7 @@ namespace core
         }
 
         template <class T>
-        LoggerBase& operator<<(const T& value)
+        LogBase& operator<<(const T& value)
         {
             write(value, std::is_integral<T>::type());
             return *this;
@@ -77,15 +74,45 @@ namespace core
 
         Severity m_severity;
         std::ostringstream m_buffer;
-
-        static std::ostream* s_out;
     };
 
 
-    inline LoggerBase cDebug() { return LoggerBase(LoggerBase::Debug); }
-    inline LoggerBase cInfo() { return LoggerBase(LoggerBase::Info); }
-    inline LoggerBase cWarning() { return LoggerBase(LoggerBase::Warning); }
-    inline LoggerBase cError() { return LoggerBase(LoggerBase::Error); }
-    inline LoggerBase cFatal() { return LoggerBase(LoggerBase::Fatal); }
+#define cDebug   LogBase(LogBase::Debug)
+#define cInfo    LogBase(LogBase::Info)
+#define cWarning LogBase(LogBase::Warning)
+#define cError   LogBase(LogBase::Error)
+#define cFatal   LogBase(LogBase::Fatal)
+
+
+
+    class LogService : private boost::noncopyable
+    {
+    public:
+
+        static LogService& instance();
+
+        void start(std::ostream* sink);
+        void stop();
+        void log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp);
+
+    private:
+
+        LogService();
+        void run();
+
+        struct LogRecord
+        {
+            LogBase::Severity severity;
+            std::string message;
+            SCTimePoint timestamp;
+
+            void writeTo(std::ostream& out) const;
+        };
+
+        mpmc_queue<LogRecord> m_queue;
+        std::ostream* m_sink;
+        std::unique_ptr<std::thread> m_thread;
+        std::atomic<bool> m_stopRequested;
+    };
 
 }

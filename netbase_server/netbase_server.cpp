@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "core/smart_socket.h"
+#include "core/logger.h"
 
 using namespace core;
 using namespace std::chrono;
@@ -17,8 +18,8 @@ protected:
 
     void receive(const Connection& conn, const PacketPtr& packet) override
     {
-        //const PacketHeader& header = packet->header();
-        //cDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
+        const PacketHeader& header = packet->header();
+        cDebug << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();
         ++receivedCount;
     }
 };
@@ -28,6 +29,7 @@ protected:
 int main(int argc, char **argv)
 {
 	std::locale::global(std::locale("rus"));
+    LogService::instance().start(&std::cout);
 
     try
     {
@@ -67,15 +69,16 @@ int main(int argc, char **argv)
             ts2 = system_clock::now();
             auto work_duration = duration_cast<milliseconds>(ts2 - ts1);
 
-            cDebug() << "tick" << tick << "poll took" << poll_duration << "and work done in" << work_duration;
+            cDebug << "tick" << tick << "poll took" << poll_duration << "and work done in" << work_duration;
             std::this_thread::sleep_for(milliseconds(50) - poll_duration - work_duration);
         }
     }
     catch (const std::exception& ex)
     {
-        cError() << ex.what();
+        cError << ex.what();
     }
 
+    LogService::instance().stop();
 	return 0;
 }
 

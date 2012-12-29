@@ -25,10 +25,7 @@ namespace core {
     {
         ConnectionPtr& conn = m_connections[remote];
         if (!conn)
-        {
             conn.reset(new Connection(*this, remote));
-            //notifyObservers([&](ISocketStateObserver& observer){ observer.onConnect(conn); });
-        }
         return conn;
     }
 
@@ -81,7 +78,7 @@ namespace core {
         }
         catch (const std::exception& ex)
         {
-            cError() << ex.what();
+            cError << ex.what();
         }
         startReceive();
     }

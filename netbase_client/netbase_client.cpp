@@ -1,12 +1,15 @@
 ﻿#include "stdafx.h"
 #include "core/smart_socket.h"
+#include "core/logger.h"
 
 using namespace core;
 using namespace std::chrono;
 
+
 int main(int argc, char **argv)
 {
 	std::locale::global(std::locale("rus"));
+    LogService::instance().start(&std::cout);
 
 	try
 	{
@@ -32,15 +35,16 @@ int main(int argc, char **argv)
             auto packet = std::make_shared<Packet>(1);
             conn->send(packet);
 
-            cDebug() << "tick";
+            cDebug << "tick";
             std::this_thread::sleep_for(milliseconds(50));
         }
 	}
 	catch (const std::exception& e)
 	{
-		cError() << e.what();
+		cError << e.what();
 	}
 
+    LogService::instance().stop();
 	return 0;
 }
 

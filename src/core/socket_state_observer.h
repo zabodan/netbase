@@ -33,28 +33,28 @@ namespace core {
 
         void onConnect(const ConnectionPtr& conn)
         {
-            cInfo() << "connection established with" << conn->peer();
+            cInfo << "connection established with" << conn->peer();
         }
 
         void onPeerDisconnect(const ConnectionPtr& conn)
         {
-            cInfo() << "peer" << conn->peer() << "disconnected";
+            cInfo << "peer" << conn->peer() << "disconnected";
         }
 
         void onBadPacketSize(const udp::endpoint& peer, size_t size)
         {
-            cError() << "received packet with bad size" << size << "from" << peer;
+            cError << "received packet with bad size" << size << "from" << peer;
         }
 
         void onError(const ConnectionPtr& conn, const boost::system::error_code& error)
         {
-            cError() << "error on connection with" << conn->peer();
-            cError() << "  category:" << error.category().name() << "id:" << error.value() << "message:" << error.message();
+            cError << "error on connection with" << conn->peer();
+            cError << "  category:" << error.category().name() << "id:" << error.value() << "message:" << error.message();
         }
 
         virtual void onSocketShutdown()
         {
-            cInfo() << "socket is shutting down";
+            cInfo << "socket is shutting down";
         }
     };
 

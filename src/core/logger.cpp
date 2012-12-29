@@ -1,35 +1,91 @@
 #include "stdafx.h"
 #include "core/logger.h"
-#include <boost/format.hpp>
-#include <chrono>
 #include <iomanip>
-#include <iostream>
 
 namespace core
 {
 
     using namespace std::chrono;
 
-    std::ostream* LoggerBase::s_out = &std::cout;
-
-    std::string timestamp()
+    LogBase::~LogBase()
     {
-        auto now = system_clock::now();
-        std::time_t t = system_clock::to_time_t(now);
-        std::tm loc;
-        localtime_s(&loc, &t);
-
-        auto ms = duration_cast<milliseconds>(now.time_since_epoch());
-        return boost::str(boost::format("%1%.%2$03d") % std::put_time(&loc, "%Y-%m-%d %H:%M:%S") % (ms.count() % 1000));
+        if (m_severity != None)
+            LogService::instance().log(m_severity, m_buffer.str(), system_clock::now());
     }
 
 
-    LoggerBase::~LoggerBase()
+
+    LogService::LogService()
+        : m_sink(nullptr), m_stopRequested(false)
     {
-        static const char* prefix[] = { "-N-", "-D-", "-I-", "-W-", "-E-", "-F-" };
-        if (s_out && m_severity != None)
+    }
+
+    //static
+    LogService& LogService::instance()
+    {
+        static LogService service;
+        return service;
+    }
+
+    void LogService::start(std::ostream* sink)
+    {
+        if (m_thread)
+            throw std::runtime_error("LogService already running!");
+
+        m_sink = sink;
+        m_thread.reset(new std::thread([this]{ run(); }));
+    }
+
+    void LogService::stop()
+    {
+        if (m_thread)
         {
-            (*s_out) << timestamp() << " " << prefix[m_severity] << m_buffer.str() << "\n";
+            m_stopRequested = true;
+            m_thread->join();
+            m_thread.reset();
         }
     }
+    
+    void LogService::log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp)
+    {
+        LogRecord record = { severity, message, tp };
+        m_queue.push(std::move(record));
+    }
+    
+    void LogService::run()
+    {
+        LogRecord record;
+        while (!m_stopRequested)
+        {
+            for (size_t count = 0; m_queue.pop(record) && m_sink && count < 10; ++count)
+            {
+                record.writeTo(*m_sink);
+            }
+            std::this_thread::yield();
+        }
+        m_stopRequested = false;
+    }
+
+
+    void LogService::LogRecord::writeTo(std::ostream& out) const
+    {
+        static const char* prefix[] = { " -N-", " -D-", " -I-", " -W-", " -E-", " -F-" };
+
+        // note: as long as we have single writing thread, static buffers are fine
+        static std::time_t tt;
+        static std::tm loc;
+        
+        // get local time in std::tm structure
+        tt = system_clock::to_time_t(timestamp);
+        localtime_s(&loc, &tt);
+
+        // get milliseconds
+        auto ms = duration_cast<milliseconds>(timestamp.time_since_epoch());
+
+        out << std::put_time(&loc, "%Y-%m-%d %H:%M:%S")
+            << std::setfill('0') << std::setw(3) << ms.count() % 1000 << std::setfill(' ')
+            << prefix[severity] << message << "\n";
+    }
+
+
 }

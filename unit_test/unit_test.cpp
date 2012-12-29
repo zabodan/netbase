@@ -30,14 +30,14 @@ BOOST_AUTO_TEST_CASE(mpmc_queue_test)
     mpmc_queue<int> queue;
     int tmp = 0;
 
-    queue.enqueue(1);
-    queue.enqueue(2);
-    queue.enqueue(3);
-    BOOST_CHECK(queue.dequeue(tmp) && tmp == 1);
-    queue.enqueue(4);
-    BOOST_CHECK(queue.dequeue(tmp) && tmp == 2);
-    BOOST_CHECK(queue.dequeue(tmp) && tmp == 3);
-    BOOST_CHECK(queue.dequeue(tmp) && tmp == 4);
-    BOOST_CHECK(!queue.dequeue(tmp));
+    queue.push(1);
+    queue.push(2);
+    queue.push(3);
+    BOOST_CHECK(queue.pop(tmp) && tmp == 1);
+    queue.push(4);
+    BOOST_CHECK(queue.pop(tmp) && tmp == 2);
+    BOOST_CHECK(queue.pop(tmp) && tmp == 3);
+    BOOST_CHECK(queue.pop(tmp) && tmp == 4);
+    BOOST_CHECK(!queue.pop(tmp));
 }
 

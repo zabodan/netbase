@@ -27,64 +27,69 @@ private:
     char pad0[CACHE_LINE_SIZE];
 
     // for one consumer at a time
-    node* first;
+    node* m_tail;
     char pad1[CACHE_LINE_SIZE - sizeof(node*)];
 
     // shared among consumers
-    std::atomic<bool> consumerLock;
+    std::atomic<bool> m_consumerLock;
     char pad2[CACHE_LINE_SIZE - sizeof(std::atomic<bool>)];
 
     // for one producer at a time
-    std::atomic<node*> last;
+    std::atomic<node*> m_head;
     char pad3[CACHE_LINE_SIZE - sizeof(std::atomic<node*>)];
 
 public:
     
     mpmc_queue()
     {
-        first = last = new node(T());
-        consumerLock = false;
+        m_head = m_tail = new node(T());
+        m_consumerLock = false;
     }
 
     ~mpmc_queue()
     {
-        while (first != nullptr)
+        while (m_tail != nullptr)
         {
             // release the list
-            node* tmp = first;
-            first = tmp->next;
+            node* tmp = m_tail;
+            m_tail = tmp->next;
             delete tmp;
         }
     }
 
-    // aka produce
-    void enqueue(const T& value)
+    void push(const T& value)
     {
         node* tmp = new node(value);
-        node* old = last.exchange(tmp, std::memory_order_acq_rel);
+        node* old = m_head.exchange(tmp, std::memory_order_acq_rel);
         old->next = tmp;
     }
 
-    // aka consume
-    bool dequeue(T& result)
+    void push(T&& value)
     {
-        while (consumerLock.exchange(true, std::memory_order_acquire)) {}
+        node* tmp = new node(std::move(value));
+        node* old = m_head.exchange(tmp, std::memory_order_acq_rel);
+        old->next = tmp;
+    }
 
-        node* theFirst = first;
-        node* theNext = first->next;
+    bool pop(T& result)
+    {
+        while (m_consumerLock.exchange(true, std::memory_order_acquire)) {}
+
+        node* theTail = m_tail;
+        node* theNext = m_tail->next;
         
         // if queue is nonempty
-        if (first->next.load(std::memory_order_relaxed) != nullptr)
+        if (theNext != nullptr)
         {
-            first = first->next;
-            result = std::move(first->value);
-            consumerLock.store(false, std::memory_order_release);
+            result = std::move(theNext->value);
+            m_tail = theNext;
+            m_consumerLock.store(false, std::memory_order_release);
 
-            delete theFirst;
+            delete theTail;
             return true;
         }
 
-        consumerLock.store(false, std::memory_order_release);
+        m_consumerLock.store(false, std::memory_order_release);
         return false;
     }
 };

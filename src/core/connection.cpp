@@ -24,7 +24,7 @@ namespace core {
             boost::asio::buffer(m_sent.front().packet->buffer()), m_peer,
             boost::bind(&Connection::handleSend, this, m_seqNum, boost::asio::placeholders::error));
 
-        cDebug() << "sent packet" << m_seqNum << "with protocol" << packet->header().protocol << "to" << m_peer;
+        cDebug << "sent packet" << m_seqNum << "with protocol" << packet->header().protocol << "to" << m_peer;
     }
 
 
@@ -56,7 +56,7 @@ namespace core {
     void Connection::confirmPacketDelivery(std::list<PacketExt>::iterator& it)
     {
         auto observedRTT = duration_cast<milliseconds>(system_clock::now() - it->timestamp);
-        cDebug() << "acknowledged packet" << it->header().seqNum << "for peer" << m_peer << "RTT is" << observedRTT;
+        cDebug << "acknowledged packet" << it->header().seqNum << "for peer" << m_peer << "RTT is" << observedRTT;
         it = m_sent.erase(it);
     }
 
