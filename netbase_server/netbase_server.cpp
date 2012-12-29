@@ -46,7 +46,7 @@ int main(int argc, char **argv)
             io_service->poll();
 
             auto ts2 = system_clock::now();
-            auto poll_duration = duration_cast<microseconds>(ts2 - ts1);
+            auto poll_duration = duration_cast<milliseconds>(ts2 - ts1);
             ts1 = ts2;
 
             mod_p1->receivedCount = 0;
@@ -65,9 +65,9 @@ int main(int argc, char **argv)
             }
 
             ts2 = system_clock::now();
-            auto work_duration = duration_cast<microseconds>(ts2 - ts1);
+            auto work_duration = duration_cast<milliseconds>(ts2 - ts1);
 
-            cDebug() << "tick" << tick << "poll took" << poll_duration.count() << "mks and work done in" << work_duration.count() << "mks";
+            cDebug() << "tick" << tick << "poll took" << poll_duration << "and work done in" << work_duration;
             std::this_thread::sleep_for(milliseconds(50) - poll_duration - work_duration);
         }
     }

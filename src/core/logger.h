@@ -1,8 +1,18 @@
 #pragma once
 #include <sstream>
+#include <chrono>
 
 namespace core
 {
+
+    template <class T> struct duration_suffix;
+    template <> struct duration_suffix<std::chrono::hours>        { static const char* value() { return "h"; } };
+    template <> struct duration_suffix<std::chrono::minutes>      { static const char* value() { return "m"; } };
+    template <> struct duration_suffix<std::chrono::seconds>      { static const char* value() { return "s"; } };
+    template <> struct duration_suffix<std::chrono::milliseconds> { static const char* value() { return "ms"; } };
+    template <> struct duration_suffix<std::chrono::microseconds> { static const char* value() { return "mks"; } };
+    template <> struct duration_suffix<std::chrono::nanoseconds>  { static const char* value() { return "ns"; } };
+
 
     class LoggerBase
     {
@@ -34,6 +44,14 @@ namespace core
         static void SetLogStream(std::ostream* os)
         {
             s_out = os;
+        }
+
+        template <class T, class P>
+        LoggerBase& operator<<(const std::chrono::duration<T,P>& value)
+        {
+            typedef std::chrono::duration<T,P> dtype;
+            m_buffer << " " << value.count() << duration_suffix<dtype>::value();
+            return *this;
         }
 
         template <class T>

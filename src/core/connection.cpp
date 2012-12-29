@@ -4,9 +4,12 @@
 #include "core/ack_utils.h"
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
+#include <chrono>
 
 
 namespace core {
+
+    using namespace std::chrono;
 
     Connection::Connection(SmartSocket& socket, const udp::endpoint& peer)
         : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0), m_isDead(false)
@@ -52,7 +55,8 @@ namespace core {
 
     void Connection::confirmPacketDelivery(std::list<PacketExt>::iterator& it)
     {
-        cDebug() << "acknowledged packet" << it->header().seqNum << "for peer" << m_peer;
+        auto observedRTT = duration_cast<milliseconds>(system_clock::now() - it->timestamp);
+        cDebug() << "acknowledged packet" << it->header().seqNum << "for peer" << m_peer << "RTT is" << observedRTT;
         it = m_sent.erase(it);
     }
 
