@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "core/ack_utils.h"
+#include "core/mpmc_queue.h"
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
@@ -21,5 +22,22 @@ BOOST_AUTO_TEST_CASE(ack_util_test)
 	updateAcks(ack, ackBits, 2); BOOST_CHECK(ack == 3 && ackBits == 0x0007);	// 0000 0111
 	updateAcks(ack, ackBits, 7); BOOST_CHECK(ack == 7 && ackBits == 0x0078);	// 0111 1000
 	updateAcks(ack, ackBits, 6); BOOST_CHECK(ack == 7 && ackBits == 0x0079);	// 0111 1001
+}
+
+
+BOOST_AUTO_TEST_CASE(mpmc_queue_test)
+{
+    mpmc_queue<int> queue;
+    int tmp = 0;
+
+    queue.enqueue(1);
+    queue.enqueue(2);
+    queue.enqueue(3);
+    BOOST_CHECK(queue.dequeue(tmp) && tmp == 1);
+    queue.enqueue(4);
+    BOOST_CHECK(queue.dequeue(tmp) && tmp == 2);
+    BOOST_CHECK(queue.dequeue(tmp) && tmp == 3);
+    BOOST_CHECK(queue.dequeue(tmp) && tmp == 4);
+    BOOST_CHECK(!queue.dequeue(tmp));
 }
 
