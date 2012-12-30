@@ -43,6 +43,12 @@ namespace core
             m_stopRequested = true;
             m_thread->join();
             m_thread.reset();
+
+            if (m_sink)
+            {
+                m_sink->flush();
+                m_sink = nullptr;
+            }
         }
     }
     
@@ -54,18 +60,20 @@ namespace core
     
     void LogService::run()
     {
-        LogRecord record;
         while (!m_stopRequested)
         {
-            for (size_t count = 0; m_queue.pop(record) && m_sink && count < 10; ++count)
-            {
-                record.writeTo(*m_sink);
-            }
+            processQueue();
             std::this_thread::yield();
         }
+        processQueue();
         m_stopRequested = false;
     }
 
+    void LogService::processQueue()
+    {
+        while (m_queue.pop(m_record) && m_sink)
+            m_record.writeTo(*m_sink);
+    }
 
     void LogService::LogRecord::writeTo(std::ostream& out) const
     {

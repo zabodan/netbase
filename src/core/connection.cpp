@@ -11,9 +11,19 @@ namespace core {
 
     using namespace std::chrono;
 
+    static const size_t cReceivedQueueSize = 256;
+
     Connection::Connection(SmartSocket& socket, const udp::endpoint& peer)
-        : m_socket(socket), m_peer(peer), m_seqNum(0), m_ack(0), m_ackBits(0), m_isDead(false)
-    {}
+      : m_socket(socket),
+        m_peer(peer),
+        m_isDead(false),
+        m_seqNum(0),
+        m_ack(0),
+        m_ackBits(0),
+        m_oldest(0)
+    {
+        m_received.resize(cReceivedQueueSize, nullptr);
+    }
 
 
     void Connection::send(const PacketPtr& packet, size_t resendLimit)
@@ -70,15 +80,20 @@ namespace core {
         updateAcks(m_ack, m_ackBits, header.seqNum);
         processPeerAcks(header.ack, header.ackBits);
 
-        // find first packet older than this one
-        auto it = m_received.begin();
-        for (; it != m_received.end(); ++it)
-        {
-            if (moreRecentPacket(*packet, **it))
-                break;
-        }
+        if (moreRecentSeqNum(m_oldest, header.seqNum))
+            m_oldest = header.seqNum;
 
-        m_received.insert(it, std::move(packet));
+        m_received[header.seqNum % cReceivedQueueSize] = packet;
+
+        //// find first packet older than this one
+        //auto it = m_received.begin();
+        //for (; it != m_received.end(); ++it)
+        //{
+        //    if (moreRecentPacket(*packet, **it))
+        //        break;
+        //}
+
+        //m_received.insert(it, std::move(packet));
     }
 
 
@@ -129,12 +144,22 @@ namespace core {
     // dispatch all packets from oldest to most recent, to all active listeners
     void Connection::dispatchReceivedPackets(const PacketDispatcher& dispatcher)
     {
-        // go in reverse, from oldest to most recent
-        for (auto it = m_received.rbegin(); it != m_received.rend(); ++it)
-            dispatcher.dispatchPacket(*this, *it);
+        //// go in reverse, from oldest to most recent
+        //for (auto it = m_received.rbegin(); it != m_received.rend(); ++it)
+        //    dispatcher.dispatchPacket(*this, *it);
 
-        // clear receive queue
-        m_received.clear();
+        //// clear receive queue
+        //m_received.clear();
+
+        for ( ; m_oldest != m_ack + 1; ++m_oldest)
+        {
+            auto& ptr = m_received[m_oldest % cReceivedQueueSize];
+            if (ptr)
+            {
+                dispatcher.dispatchPacket(*this, ptr);
+                ptr.reset();
+            }
+        }
     }
 
 }

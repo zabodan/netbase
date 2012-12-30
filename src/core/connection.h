@@ -74,14 +74,15 @@ namespace core {
         bool m_isDead;
 
         uint16_t m_seqNum;
-        uint16_t m_ack;
+        uint16_t m_ack;         // most recently received peer seqNum
         uint32_t m_ackBits;
+        uint16_t m_oldest;      // oldest not dispatched yet packet
 
         // packets awaiting aknowledge response, from most recent to old
         std::list<PacketExt> m_sent;
 
         // received packets placed here, recent go first
-        std::list<PacketPtr> m_received;
+        std::vector<PacketPtr> m_received;
     };
 
 

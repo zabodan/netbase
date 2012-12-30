@@ -9,7 +9,7 @@ using namespace std::chrono;
 int main(int argc, char **argv)
 {
 	std::locale::global(std::locale("rus"));
-    LogService::instance().start(&std::cout);
+    LogService::ScopedGuard logGuard(&std::cout);
 
 	try
 	{
@@ -44,7 +44,6 @@ int main(int argc, char **argv)
 		cError << e.what();
 	}
 
-    LogService::instance().stop();
 	return 0;
 }
 

@@ -84,7 +84,7 @@ namespace core
 #define cFatal   LogBase(LogBase::Fatal)
 
 
-
+    // io service, singleton interface, supposed to run only in one thread
     class LogService : private boost::noncopyable
     {
     public:
@@ -95,10 +95,17 @@ namespace core
         void stop();
         void log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp);
 
+        struct ScopedGuard
+        {
+            ScopedGuard(std::ostream* sink) { LogService::instance().start(sink); }
+            ~ScopedGuard() { LogService::instance().stop(); }
+        };
+
     private:
 
         LogService();
         void run();
+        void processQueue();
 
         struct LogRecord
         {
@@ -113,6 +120,7 @@ namespace core
         std::ostream* m_sink;
         std::unique_ptr<std::thread> m_thread;
         std::atomic<bool> m_stopRequested;
+        LogRecord m_record;
     };
 
 }
