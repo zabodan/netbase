@@ -11,7 +11,7 @@ namespace core {
 
     using namespace std::chrono;
 
-    static const size_t cReceivedQueueSize = 256;
+    static const size_t cReceivedQueueSize = 1024;
 
     Connection::Connection(SmartSocket& socket, const udp::endpoint& peer)
       : m_socket(socket),
