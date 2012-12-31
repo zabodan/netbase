@@ -27,18 +27,14 @@ namespace core {
     }
     
     
-    static const size_t cQueueSize = 1024;
-
     Connection::Connection(SmartSocket& socket, const udp::endpoint& peer)
       : m_socket(socket),
         m_peer(peer),
         m_isDead(false),
         m_seqNum(0),
         m_ack(0),
-        m_ackBits(0),
-        m_oldest(0)
+        m_ackBits(0)
     {
-        m_received.resize(cQueueSize, nullptr);
         m_sent.resize(cQueueSize);
     }
 
@@ -112,16 +108,14 @@ namespace core {
         updateAcks(m_ack, m_ackBits, header.seqNum);
         processPeerAcks(header.ack, header.ackBits);
 
-        if (moreRecentSeqNum(m_oldest, header.seqNum))
-            m_oldest = header.seqNum;
-
-        if (m_received[header.seqNum % cQueueSize])
+        PacketPtr old = m_received.insert(header.seqNum, packet);
+        if (old != nullptr)
         {
-            cError << "recv buffer is full, discarding old packet from" << m_peer;
-            // well, discard old packet
+            if (old->header().seqNum == header.seqNum)
+                cDebug << "detected packet duplicate";
+            else
+                cError << "recv buffer seems full, discarding old packet from" << m_peer;
         }
-
-        m_received[header.seqNum % cQueueSize] = packet;
     }
 
 
@@ -143,14 +137,11 @@ namespace core {
     // dispatch all packets from oldest to most recent, to all active listeners
     void Connection::dispatchReceivedPackets(const PacketDispatcher& dispatcher)
     {
-        for ( ; m_oldest != m_ack + 1; ++m_oldest)
+        while (!m_received.empty())
         {
-            auto& ptr = m_received[m_oldest % cQueueSize];
-            if (ptr)
-            {
-                dispatcher.dispatchPacket(*this, ptr);
-                ptr.reset();
-            }
+            PacketPtr packet = m_received.removeLast();
+            if (packet)
+                dispatcher.dispatchPacket(*this, packet);
         }
     }
 

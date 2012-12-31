@@ -1,5 +1,6 @@
 #pragma once
 #include "core/packet.h"
+#include "core/packet_buffer.h"
 #include "core/logger.h"
 #include <set>
 
@@ -24,10 +25,13 @@ namespace core {
 
         bool isDead() const { return m_isDead; }
 
-        // dispatch all packets in m_received to all active listeners
+        // dispatch all received packets to all active listeners
         void dispatchReceivedPackets(const PacketDispatcher& dispatcher);
 
     protected:
+
+        static const size_t cQueueSize = 1024;
+
 
         struct PacketExt
         {
@@ -40,12 +44,13 @@ namespace core {
             system_clock::time_point timestamp; // timestamp to measure latency
         };
 
+        
         friend class SmartSocket;
         
         // this function only called from ioservice strands (ioservice thread)
         void doSend(const PacketPtr& packet, size_t resendLimit);
 
-        // receive fresh new packet, place into m_received queue
+        // process packet headers, place packet into queue
         void handleReceive(const PacketPtr& packet);
 
         // handler for logging errors during async_send_to
@@ -72,13 +77,12 @@ namespace core {
         uint16_t m_seqNum;
         uint16_t m_ack;         // most recently received peer seqNum
         uint32_t m_ackBits;
-        uint16_t m_oldest;      // oldest not dispatched yet packet
-
+        
         // packets awaiting aknowledge response, from most recent to old
         std::vector<PacketExt> m_sent;
 
-        // received packets placed here, recent go first
-        std::vector<PacketPtr> m_received;
+        // received packets are placed here, recent go first
+        RecvPacketBuffer<cQueueSize> m_received;
     };
 
 
