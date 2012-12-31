@@ -71,8 +71,9 @@ namespace core {
         PacketExt& getSentPacketExt(uint16_t seqNum) { return m_sent[seqNum % m_sent.size()]; }
 
         SmartSocket& m_socket;
-        udp::endpoint m_peer;
-        bool m_isDead;          // peer disconnected
+        const udp::endpoint m_peer;
+        std::atomic<bool> m_isDead;          // peer disconnected
+        size_t m_averageRTT;
 
         uint16_t m_seqNum;
         uint16_t m_ack;         // most recently received peer seqNum

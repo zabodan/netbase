@@ -33,7 +33,8 @@ namespace core {
         m_isDead(false),
         m_seqNum(0),
         m_ack(0),
-        m_ackBits(0)
+        m_ackBits(0),
+        m_averageRTT(50)
     {
         m_sent.resize(cQueueSize);
     }
@@ -93,7 +94,9 @@ namespace core {
         if (pExt.packet)
         {
             auto observedRTT = duration_cast<milliseconds>(system_clock::now() - pExt.timestamp);
-            cDebug << "acknowledged packet" << pExt.header().seqNum << "for peer" << m_peer << "RTT is" << observedRTT;
+            m_averageRTT = (9 * m_averageRTT + static_cast<size_t>(observedRTT.count())) / 10;
+            
+            cDebug << "acknowledged packet" << pExt.header().seqNum << "for peer" << m_peer << "RTT is" << observedRTT << "averageRTT" << m_averageRTT << "ms";
             pExt.packet = nullptr;
         }
     }
