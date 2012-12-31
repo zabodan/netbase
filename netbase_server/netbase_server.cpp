@@ -34,22 +34,19 @@ int main(int argc, char **argv)
     try
     {
         auto io_service = std::make_shared<boost::asio::io_service>();
+        
         SmartSocket socket(io_service, 13999);
         socket.addObserver(std::make_shared<SocketStateLogger>());
 
         auto mod_p1 = std::make_shared<ModP1>();
         socket.registerProtocolListener(1, mod_p1);
 
-        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10000;
+        std::thread io_thread([=]{ io_service->run(); });
+
+        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 1000;
         for (size_t tick = 0; tick < maxTicks; ++tick)
         {
             auto ts1 = system_clock::now();
-
-            io_service->poll();
-
-            auto ts2 = system_clock::now();
-            auto poll_duration = duration_cast<milliseconds>(ts2 - ts1);
-            ts1 = ts2;
 
             mod_p1->receivedCount = 0;
             socket.dispatchReceivedPackets();
@@ -66,12 +63,15 @@ int main(int argc, char **argv)
                 socket.sendEveryone(std::make_shared<Packet>(cHeartBitProtocol));
             }
 
-            ts2 = system_clock::now();
+            auto ts2 = system_clock::now();
             auto work_duration = duration_cast<milliseconds>(ts2 - ts1);
 
-            cDebug << "tick" << tick << "poll took" << poll_duration << "and work done in" << work_duration;
-            std::this_thread::sleep_for(milliseconds(50) - poll_duration - work_duration);
+            cDebug << "tick" << tick << "work done in" << work_duration;
+            std::this_thread::sleep_for(milliseconds(50) - work_duration);
         }
+
+        io_service->stop();
+        io_thread.join();
     }
     catch (const std::exception& ex)
     {

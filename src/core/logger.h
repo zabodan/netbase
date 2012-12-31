@@ -82,6 +82,7 @@ namespace core
 #define cWarning LogBase(LogBase::Warning)
 #define cError   LogBase(LogBase::Error)
 #define cFatal   LogBase(LogBase::Fatal)
+#define cWHERE __FILE__ << ":" << __LINE__ << "[" << __FUNCTION__ << "]"
 
 
     // io service, singleton interface, supposed to run only in one thread

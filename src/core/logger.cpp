@@ -63,7 +63,7 @@ namespace core
         while (!m_stopRequested)
         {
             processQueue();
-            std::this_thread::yield();
+            std::this_thread::sleep_for(milliseconds(1));
         }
         processQueue();
         m_stopRequested = false;

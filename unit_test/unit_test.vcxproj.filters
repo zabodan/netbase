@@ -33,6 +33,9 @@
     <ClInclude Include="..\src\core\mpmc_queue.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\concurrent_map.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

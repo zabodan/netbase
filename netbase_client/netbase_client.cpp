@@ -24,20 +24,23 @@ int main(int argc, char **argv)
 
         auto conn = socket.getOrCreateConnection(server);
 
+        std::thread io_thread([=]{ io_service->run(); });
+
         size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10;
         for (size_t tick = 0; tick < maxTicks; ++tick)
         {
-            io_service->poll();
-
             if (conn->isDead())
                 break;
 
             auto packet = std::make_shared<Packet>(1);
-            conn->send(packet);
+            conn->asyncSend(packet);
 
             cDebug << "tick";
             std::this_thread::sleep_for(milliseconds(50));
         }
+
+        io_service->stop();
+        io_thread.join();
 	}
 	catch (const std::exception& e)
 	{

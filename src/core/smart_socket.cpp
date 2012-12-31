@@ -23,16 +23,20 @@ namespace core {
 
     ConnectionPtr SmartSocket::getOrCreateConnection(const udp::endpoint& remote)
     {
-        ConnectionPtr& conn = m_connections[remote];
-        if (!conn)
+        ConnectionPtr conn;
+        if (!m_connections.find(remote, conn))
+        {
             conn.reset(new Connection(*this, remote));
+            m_connections.insert(remote, conn);
+        }
         return conn;
     }
 
     ConnectionPtr SmartSocket::getExistingConnection(const udp::endpoint& remote)
     {
-        auto it = m_connections.find(remote);
-        return it != m_connections.end() ? it->second : nullptr;
+        ConnectionPtr conn;
+        m_connections.find(remote, conn);
+        return conn; // unchanged (nullptr) if not found
     }
 
 
@@ -80,6 +84,10 @@ namespace core {
         {
             cError << ex.what();
         }
+        catch (...)
+        {
+            cFatal << "caught non-std exception at" << cWHERE;
+        }
         startReceive();
     }
 
@@ -92,22 +100,17 @@ namespace core {
 
     void SmartSocket::dispatchReceivedPackets()
     {
-        for (auto it : m_connections)
-        {
-            it.second->dispatchReceivedPackets(m_dispatcher);
-        }
+        m_connections.for_each_value([&](const ConnectionPtr& conn){
+            conn->dispatchReceivedPackets(m_dispatcher);
+        });
     }
 
     void SmartSocket::sendEveryone(const PacketPtr& packet, size_t resendLimit)
     {
-        for (auto it : m_connections)
-        {
-            if (it.second->isDead())
-                continue;
-
-            auto clone = std::make_shared<Packet>(*packet);
-            it.second->send(clone, resendLimit);
-        }
+        m_connections.for_each_value([&](const ConnectionPtr& conn){
+            if (!conn->isDead())
+                conn->asyncSend(std::make_shared<Packet>(*packet), resendLimit);
+        });
     }
 
 }

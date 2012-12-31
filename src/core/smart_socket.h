@@ -3,6 +3,7 @@
 #include "core/packet_dispatcher.h"
 #include "core/observable.h"
 #include "core/socket_state_observer.h"
+#include "core/concurrent_map.h"
 #include <boost/signal.hpp>
 #include <map>
 
@@ -10,6 +11,7 @@
 namespace core {
 
     typedef std::shared_ptr<boost::asio::io_service> IOServicePtr;
+    typedef ConcurrentMap<udp::endpoint, ConnectionPtr> ConnectionsMap;
 
 
     class SmartSocket : public Observable<ISocketStateObserver>
@@ -37,6 +39,8 @@ namespace core {
         // accessor to underlying socket
         udp::socket& rawSocket() { return m_socket; }
 
+        const IOServicePtr& getIOService() const { return m_ioservice; }
+
     private:
 
         void startReceive();
@@ -50,7 +54,7 @@ namespace core {
         std::array<uint8_t, cMaxUdpPacketSize> m_recvBuf;
         udp::endpoint m_recvPeer;
 
-        std::map<udp::endpoint, ConnectionPtr> m_connections;
+        ConnectionsMap m_connections;
         PacketDispatcher m_dispatcher;
     };
 

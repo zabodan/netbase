@@ -8,7 +8,7 @@ namespace core {
     using boost::asio::ip::udp;
     using std::chrono::system_clock;
 
-    static const size_t cMaxUdpPacketSize = 512;
+    static const size_t cMaxUdpPacketSize = 1024;
 
 
     struct PacketHeader

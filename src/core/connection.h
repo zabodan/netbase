@@ -19,40 +19,34 @@ namespace core {
 
         const udp::endpoint& peer() const { return m_peer; }
 
-        void send(const PacketPtr& packet, size_t resendLimit = 0);
+        // makes new job for ioservice: doSend(packet, resendLimit)
+        void asyncSend(const PacketPtr& packet, size_t resendLimit = 0);
 
         bool isDead() const { return m_isDead; }
+
+        // dispatch all packets in m_received to all active listeners
+        void dispatchReceivedPackets(const PacketDispatcher& dispatcher);
 
     protected:
 
         struct PacketExt
         {
-            PacketExt(const PacketPtr& p, size_t resend, uint16_t seqNum, uint16_t ack, uint32_t ackBits)
-                : packet(p), resendLimit(resend), timestamp(system_clock::now())
-            {
-                p->header().seqNum = seqNum;
-                p->header().ack = ack;
-                p->header().ackBits = ackBits;
-            }
-
+            PacketExt();
+            void reset(const PacketPtr& p, size_t resend, uint16_t seqNum, uint16_t ack, uint32_t ackBits);
             const PacketHeader& header() const { return packet->header(); }
 
             PacketPtr packet;
-
-            // how many times to try and resend this packet
-            size_t resendLimit;
-
-            // timestamp to measure latency
-            system_clock::time_point timestamp;
+            size_t resendLimit;                 // how many times to try and resend this packet
+            system_clock::time_point timestamp; // timestamp to measure latency
         };
 
         friend class SmartSocket;
+        
+        // this function only called from ioservice strands (ioservice thread)
+        void doSend(const PacketPtr& packet, size_t resendLimit);
 
         // receive fresh new packet, place into m_received queue
         void handleReceive(const PacketPtr& packet);
-
-        // dispatch all packets in m_received to all active listeners, then clear m_received
-        void dispatchReceivedPackets(const PacketDispatcher& dispatcher);
 
         // handler for logging errors during async_send_to
         void handleSend(uint16_t seqNum, const boost::system::error_code& error);
@@ -64,14 +58,16 @@ namespace core {
         void markDead(bool value) { m_isDead = value; }
 
         // remove or resend packet which was considered undelivered, it = m_sent.erase(it)
-        void removeUndeliveredPacket(std::list<PacketExt>::iterator& it);
+        void removeUndeliveredPacket(uint16_t seqNum);
 
         // confirm packet, compute RTT, it = m_sent.erase(it)
-        void confirmPacketDelivery(std::list<PacketExt>::iterator& it);
+        void confirmPacketDelivery(uint16_t seqNum);
+
+        PacketExt& getSentPacketExt(uint16_t seqNum) { return m_sent[seqNum % m_sent.size()]; }
 
         SmartSocket& m_socket;
         udp::endpoint m_peer;
-        bool m_isDead;
+        bool m_isDead;          // peer disconnected
 
         uint16_t m_seqNum;
         uint16_t m_ack;         // most recently received peer seqNum
@@ -79,7 +75,7 @@ namespace core {
         uint16_t m_oldest;      // oldest not dispatched yet packet
 
         // packets awaiting aknowledge response, from most recent to old
-        std::list<PacketExt> m_sent;
+        std::vector<PacketExt> m_sent;
 
         // received packets placed here, recent go first
         std::vector<PacketPtr> m_received;
@@ -87,6 +83,5 @@ namespace core {
 
 
     typedef std::shared_ptr<Connection> ConnectionPtr;
-
 
 }
