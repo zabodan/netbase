@@ -38,12 +38,12 @@ namespace core {
     {
     public:
 
-        SendPacketBuffer() : m_head(0), m_tail(1)
+        SendPacketBuffer() : m_head(1), m_tail(1)
         {}
 
         PacketExt store(const PacketPtr& p, size_t resend, uint16_t ack, uint32_t ackBits)
         {
-            uint16_t seqNum = ++m_head;
+            uint16_t seqNum = m_head.fetch_add(1);
             PacketExt pExt = get(seqNum);
             get(seqNum) = PacketExt(p, resend, seqNum, ack, ackBits);
             return pExt;
@@ -71,7 +71,7 @@ namespace core {
 
         bool empty() const
         {
-            return m_tail == m_head + 1;
+            return m_tail == m_head;
         }
 
         uint16_t latestSeqNum() const
@@ -96,12 +96,12 @@ namespace core {
 
         void updateTail()
         {
-            while (!get(m_tail).packet && !moreRecentSeqNum(m_tail, m_head))
+            while (!get(m_tail).packet && moreRecentSeqNum(m_head, m_tail))
                 ++m_tail;
         }
 
-        uint16_t m_head;
-        uint16_t m_tail;
+        std::atomic<uint16_t> m_head;
+        std::atomic<uint16_t> m_tail;
         PacketExt m_buffer[N];
     };
 

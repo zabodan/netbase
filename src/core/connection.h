@@ -17,6 +17,7 @@ namespace core {
     public:
 
         Connection(SmartSocket& socket, const udp::endpoint& peer);
+        ~Connection();
 
         const udp::endpoint& peer() const { return m_peer; }
 
@@ -28,6 +29,8 @@ namespace core {
         // dispatch all received packets to all active listeners
         void dispatchReceivedPackets(const PacketDispatcher& dispatcher);
 
+        const SCTimePoint& lastActivityTime() const { return m_recvTime; }
+
     protected:
 
         friend class SmartSocket;
@@ -36,7 +39,7 @@ namespace core {
         void doSend(const PacketPtr& packet, size_t resendLimit);
 
         // [io-thread-handle] success/failure handle for async_send_to
-        void handleSend(uint16_t seqNum, const boost::system::error_code& error);
+        void handleSend(const PacketPtr& packet, const boost::system::error_code& error);
 
         // [io-thread-handle] process packet headers, place packet into queue
         void handleReceive(const PacketPtr& packet);
@@ -68,6 +71,9 @@ namespace core {
 
         // average round-trip time
         size_t m_averageRTT;
+        size_t m_recvCount;
+        size_t m_sentCount;
+        size_t m_ackdCount;
 
         // time when received last packet
         SCTimePoint m_recvTime;

@@ -26,6 +26,19 @@ namespace core {
             m_data.erase(key);
         }
 
+        template <class Fn>
+        void remove_if(const Fn& func)
+        {
+            WriteLock guard(m_locker);
+            for (auto it = m_data.begin(); it != m_data.end(); )
+            {
+                if (func(it->second))
+                    m_data.erase(it++);
+                else
+                    ++it;
+            }
+        }
+
         bool find(const Key& key, Value& outValue)
         {
             ReadLock guard(m_locker);

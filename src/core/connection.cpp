@@ -18,8 +18,19 @@ namespace core {
         m_isDead(false),
         m_ack(0),
         m_ackBits(0),
-        m_averageRTT(50)
+        m_averageRTT(50),
+        m_recvCount(0),
+        m_sentCount(0),
+        m_ackdCount(0)
     {
+    }
+
+
+    Connection::~Connection()
+    {
+        cDebug << "stats for" << m_peer
+               << ": sent" << m_sentCount << "packets, confirmed" << m_ackdCount << "of them,"
+               << "received" << m_recvCount << "packets, latest RTT was" << milliseconds(m_averageRTT);
     }
 
 
@@ -28,6 +39,7 @@ namespace core {
         // note: lambda here catches packet by value!
         m_socket.getIOService()->post([=]{ doSend(packet, resendLimit); });
     }
+
 
     void Connection::doSend(const PacketPtr& packet, size_t resendLimit)
     {
@@ -43,24 +55,21 @@ namespace core {
 
         uint16_t seqNum = packet->header().seqNum;
         m_socket.rawSocket().async_send_to(boost::asio::buffer(packet->buffer()), m_peer,
-            boost::bind(&Connection::handleSend, this, seqNum, boost::asio::placeholders::error));
+            boost::bind(&Connection::handleSend, this, packet, boost::asio::placeholders::error));
 
         cDebug << "sending packet" << seqNum << "with protocol" << packet->header().protocol << "to" << m_peer;
-
-        ///// lets define our own packet TTL as averageRTT * 2
-
+        ++m_sentCount;
     }
 
 
     // handler for logging errors during async_send_to
-    void Connection::handleSend(uint16_t seqNum, const boost::system::error_code& error)
+    void Connection::handleSend(const PacketPtr& packet, const boost::system::error_code& error)
     {
         if (error)
         {
             m_socket.notifyObservers([&](ISocketStateObserver& observer){ observer.onError(shared_from_this(), error); });
-            removeUndeliveredPacket(seqNum);
+            removeUndeliveredPacket(packet->header().seqNum);
         }
-        cDebug << "sent" << seqNum;
     }
 
     void Connection::removeUndeliveredPacket(uint16_t seqNum)
@@ -78,10 +87,13 @@ namespace core {
         if (m_sentPackets.contains(seqNum))
         {
             PacketExt pExt = m_sentPackets.release(seqNum);
+
             milliseconds observedRTT = duration_cast<milliseconds>(system_clock::now() - pExt.timestamp);
             m_averageRTT = (9 * m_averageRTT + static_cast<size_t>(observedRTT.count())) / 10;
             
-            cDebug << "acknowledged packet" << pExt.packet->header().seqNum << "for peer" << m_peer << "RTT is" << observedRTT << "averageRTT" << m_averageRTT << "ms";
+            cDebug << "acknowledged packet" << pExt.packet->header().seqNum << "for peer" << m_peer
+                   << "RTT is" << observedRTT << "averageRTT" << milliseconds(m_averageRTT);
+            ++m_ackdCount;
         }
     }
 
@@ -91,6 +103,7 @@ namespace core {
     void Connection::handleReceive(const PacketPtr& packet)
     {
         m_recvTime = system_clock::now();
+        ++m_recvCount;
 
         const PacketHeader& header = packet->header();
         updateAcks(m_ack, m_ackBits, header.seqNum);
@@ -120,10 +133,19 @@ namespace core {
                 confirmPacketDelivery(peerAck - delta);
         }
 
-        // if received peerAck is greater then 256 + oldestSeqNum, with high confidence we wont see ack for oldest packet
-        while (!m_sentPackets.empty() && moreRecentSeqNum(peerAck, m_sentPackets.oldestSeqNum() + 256))
+        // consider oldest packet undelivered if its seqNum is less then peerAck - 256,
+        // or timestamp is more then two seconds away from current time
+        const auto minTime = system_clock::now() - seconds(2);
+        const uint16_t minSeqNum = peerAck - 256;
+
+        while (!m_sentPackets.empty())
         {
-            removeUndeliveredPacket(m_sentPackets.oldestSeqNum());
+            if (moreRecentSeqNum(minSeqNum, m_sentPackets.oldestSeqNum()) ||
+                minTime > m_sentPackets.oldestTime())
+            {
+                removeUndeliveredPacket(m_sentPackets.oldestSeqNum());
+            }
+            else break;
         }
     }
 

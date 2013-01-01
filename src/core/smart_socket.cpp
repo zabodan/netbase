@@ -3,17 +3,29 @@
 #include "core/logger.h"
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
+#include <chrono>
 
 
 namespace core {
 
+    using namespace std::chrono;
+    using namespace boost::asio;
+
+    // housekeeping timer works with boost::chrono best
+    static const auto cHouseKeepingPeriod = boost::chrono::seconds(1);
+    static const auto cConnectionTimeout = std::chrono::seconds(5);
+
 
     SmartSocket::SmartSocket(const IOServicePtr& ioservice, size_t port)
-        : m_ioservice(ioservice),
+      : m_ioservice(ioservice),
         m_localhost(udp::v4(), port),
-        m_socket(*ioservice, m_localhost)
+        m_socket(*ioservice, m_localhost),
+        m_housekeepTimer(*m_ioservice)
     {
         startReceive();
+
+        m_housekeepTimer.expires_from_now(cHouseKeepingPeriod);
+        m_housekeepTimer.async_wait(boost::bind(&SmartSocket::handleHouseKeep, this, placeholders::error));
     }
 
     SmartSocket::~SmartSocket()
@@ -42,43 +54,43 @@ namespace core {
 
     void SmartSocket::startReceive()
     {
-        m_socket.async_receive_from(
-            boost::asio::buffer(m_recvBuf), m_recvPeer,
-            boost::bind(&SmartSocket::handleReceive, this,
-                boost::asio::placeholders::error,
-                boost::asio::placeholders::bytes_transferred));
+        m_socket.async_receive_from(buffer(m_recvBuf), m_recvPeer,
+            boost::bind(&SmartSocket::handleReceive, this, placeholders::error, placeholders::bytes_transferred));
     }
 
 
     void SmartSocket::handleReceive(const boost::system::error_code& error, size_t recvBytes)
     {
-        if (error == boost::asio::error::message_size || (!error && recvBytes < sizeof(PacketHeader)))
+        try
         {
-            notifyObservers([=](ISocketStateObserver& observer){ observer.onBadPacketSize(m_recvPeer, recvBytes); });
-        }
-        else if (error)
-        {
-            auto conn = getExistingConnection(m_recvPeer);
-            if (conn && !conn->isDead())
-                switch (error.value())
-                {
-                    case boost::asio::error::connection_aborted:
-                    case boost::asio::error::connection_refused:
-                    case boost::asio::error::connection_reset:
-                        notifyObservers([&](ISocketStateObserver& observer){ observer.onPeerDisconnect(conn); });
-                        conn->markDead(true);
-                        break;
+            if (error == error::message_size || (!error && recvBytes < sizeof(PacketHeader)))
+            {
+                notifyObservers([=](ISocketStateObserver& observer){ observer.onBadPacketSize(m_recvPeer, recvBytes); });
+            }
+            else if (error)
+            {
+                auto conn = getExistingConnection(m_recvPeer);
+                if (conn && !conn->isDead())
+                    switch (error.value())
+                    {
+                        case error::connection_aborted:
+                        case error::connection_refused:
+                        case error::connection_reset:
+                            notifyObservers([&](ISocketStateObserver& observer){ observer.onPeerDisconnect(conn); });
+                            conn->markDead(true);
+                            break;
                 
-                    default:
-                        notifyObservers([&](ISocketStateObserver& observer){ observer.onError(conn, error); });
-                        break;
-                }
-        }
-        else try
-        {
-            ConnectionPtr conn = getOrCreateConnection(m_recvPeer);
-            conn->handleReceive(std::make_shared<Packet>(m_recvBuf.data(), recvBytes));
-            conn->markDead(false);
+                        default:
+                            notifyObservers([&](ISocketStateObserver& observer){ observer.onError(conn, error); });
+                            break;
+                    }
+            }
+            else
+            {
+                ConnectionPtr conn = getOrCreateConnection(m_recvPeer);
+                conn->handleReceive(std::make_shared<Packet>(m_recvBuf.data(), recvBytes));
+                conn->markDead(false);
+            }
         }
         catch (const std::exception& ex)
         {
@@ -86,7 +98,7 @@ namespace core {
         }
         catch (...)
         {
-            cFatal << "caught non-std exception at" << cWHERE;
+            cFatal << "unknown exception" << cWHERE;
         }
         startReceive();
     }
@@ -105,6 +117,7 @@ namespace core {
         });
     }
 
+
     void SmartSocket::sendEveryone(const PacketPtr& packet, size_t resendLimit)
     {
         m_connections.for_each_value([&](const ConnectionPtr& conn){
@@ -113,4 +126,35 @@ namespace core {
         });
     }
 
+
+    void SmartSocket::handleHouseKeep(const boost::system::error_code& error)
+    {
+        if (error == boost::asio::error::operation_aborted)
+        {
+            cDebug << "HouseKeeping timer was aborted";
+            return;
+        }
+
+        m_housekeepTimer.expires_at(m_housekeepTimer.expires_at() + cHouseKeepingPeriod);
+        m_housekeepTimer.async_wait(boost::bind(&SmartSocket::handleHouseKeep, this, placeholders::error));
+
+        // find timed out connections and mark them dead, and count dead connections
+        // to determine if we need to remove anything (slow path that we want to avoid)
+        auto timeoutStart = system_clock::now() - cConnectionTimeout;
+        size_t deadCount = 0;
+
+        m_connections.for_each_value([&](const ConnectionPtr& conn){
+            if (conn->lastActivityTime() < timeoutStart)
+            {
+                cDebug << "connection with" << conn->peer() << "timed out";
+                conn->markDead(true);
+            }
+            if (conn->isDead())
+                ++deadCount;
+        });
+
+        // remove dead connections -- slow path, but rare (write lock)
+        if (deadCount > 0)
+            m_connections.remove_if([](const ConnectionPtr& conn){ return conn->isDead(); });
+    }
 }

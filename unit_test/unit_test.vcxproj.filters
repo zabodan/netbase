@@ -39,6 +39,9 @@
     <ClInclude Include="..\src\core\concurrent_queue.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\ioservice_thread.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

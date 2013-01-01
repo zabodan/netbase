@@ -90,7 +90,7 @@ namespace core
         // get milliseconds
         auto ms = duration_cast<milliseconds>(timestamp.time_since_epoch());
 
-        out << std::put_time(&loc, "%Y-%m-%d %H:%M:%S")
+        out << std::put_time(&loc, "%Y-%m-%d %H:%M:%S.")
             << std::setfill('0') << std::setw(3) << ms.count() % 1000 << std::setfill(' ')
             << prefix[severity] << message << "\n";
     }

@@ -1,4 +1,5 @@
 #pragma once
+#include "core/logger.h"
 #include <boost/asio/ip/udp.hpp>
 #include <cstdint>
 

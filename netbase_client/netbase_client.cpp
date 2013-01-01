@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
 #include "core/smart_socket.h"
-#include "core/logger.h"
+#include "core/ioservice_thread.h"
 
 using namespace core;
 using namespace std::chrono;
@@ -24,23 +24,25 @@ int main(int argc, char **argv)
 
         auto conn = socket.getOrCreateConnection(server);
 
-        std::thread io_thread([=]{ io_service->run(); });
+        IOServiceThread ioThread(*io_service);
 
-        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10;
+        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 1000;
         for (size_t tick = 0; tick < maxTicks; ++tick)
         {
             if (conn->isDead())
                 break;
 
-            auto packet = std::make_shared<Packet>(1);
-            conn->asyncSend(packet);
+            socket.dispatchReceivedPackets();
+            
+            //if (tick < 20)
+            {
+                auto packet = std::make_shared<Packet>(1);
+                conn->asyncSend(packet);
+            }
 
-            cDebug << "tick";
+            cDebug << "tick" << tick;
             std::this_thread::sleep_for(milliseconds(50));
         }
-
-        io_service->stop();
-        io_thread.join();
 	}
 	catch (const std::exception& e)
 	{

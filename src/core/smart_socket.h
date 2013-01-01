@@ -5,12 +5,14 @@
 #include "core/socket_state_observer.h"
 #include "core/concurrent_map.h"
 #include <boost/signal.hpp>
+#include <boost/asio/system_timer.hpp>
 #include <map>
 
 
 namespace core {
 
     typedef std::shared_ptr<boost::asio::io_service> IOServicePtr;
+    typedef boost::asio::system_timer HouseKeepTimer;
     typedef ConcurrentMap<udp::endpoint, ConnectionPtr> ConnectionsMap;
 
 
@@ -47,6 +49,8 @@ namespace core {
 
         void handleReceive(const boost::system::error_code& error, size_t recvBytes);
 
+        void handleHouseKeep(const boost::system::error_code& error);
+
         IOServicePtr m_ioservice;
         udp::endpoint m_localhost;
         udp::socket m_socket;
@@ -56,6 +60,7 @@ namespace core {
 
         ConnectionsMap m_connections;
         PacketDispatcher m_dispatcher;
+        HouseKeepTimer m_housekeepTimer;
     };
 
 
