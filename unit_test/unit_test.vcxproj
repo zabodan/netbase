@@ -81,9 +81,9 @@
   <ItemGroup>
     <ClInclude Include="..\src\core\ack_utils.h" />
     <ClInclude Include="..\src\core\concurrent_map.h" />
+    <ClInclude Include="..\src\core\concurrent_queue.h" />
     <ClInclude Include="..\src\core\connection.h" />
     <ClInclude Include="..\src\core\logger.h" />
-    <ClInclude Include="..\src\core\mpmc_queue.h" />
     <ClInclude Include="..\src\core\observable.h" />
     <ClInclude Include="..\src\core\packet.h" />
     <ClInclude Include="..\src\core\packet_buffer.h" />

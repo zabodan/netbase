@@ -30,13 +30,13 @@
     <ClInclude Include="..\src\core\socket_state_observer.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\mpmc_queue.h">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\core\concurrent_map.h">
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\packet_buffer.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\concurrent_queue.h">
       <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>

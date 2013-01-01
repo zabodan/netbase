@@ -1,5 +1,5 @@
 #pragma once
-#include "core/mpmc_queue.h"
+#include "core/concurrent_queue.h"
 #include <boost/noncopyable.hpp>
 #include <sstream>
 #include <chrono>
@@ -117,7 +117,7 @@ namespace core
             void writeTo(std::ostream& out) const;
         };
 
-        mpmc_queue<LogRecord> m_queue;
+        mpsc_queue<LogRecord> m_queue;
         std::ostream* m_sink;
         std::unique_ptr<std::thread> m_thread;
         std::atomic<bool> m_stopRequested;

@@ -30,60 +30,57 @@ namespace core {
 
     protected:
 
-        static const size_t cQueueSize = 1024;
-
-
-        struct PacketExt
-        {
-            PacketExt();
-            void reset(const PacketPtr& p, size_t resend, uint16_t seqNum, uint16_t ack, uint32_t ackBits);
-            const PacketHeader& header() const { return packet->header(); }
-
-            PacketPtr packet;
-            size_t resendLimit;                 // how many times to try and resend this packet
-            system_clock::time_point timestamp; // timestamp to measure latency
-        };
-
-        
         friend class SmartSocket;
         
-        // this function only called from ioservice strands (ioservice thread)
+        // [io-thread-handle] store packet in send buffer, call async_send_to
         void doSend(const PacketPtr& packet, size_t resendLimit);
 
-        // process packet headers, place packet into queue
-        void handleReceive(const PacketPtr& packet);
-
-        // handler for logging errors during async_send_to
+        // [io-thread-handle] success/failure handle for async_send_to
         void handleSend(uint16_t seqNum, const boost::system::error_code& error);
 
-        // clean up m_sent queue, confirm delivered packets and remove (or resend) old ones
+        // [io-thread-handle] process packet headers, place packet into queue
+        void handleReceive(const PacketPtr& packet);
+
+        // clean up send buffer, confirm delivered packets and remove (or resend) old ones
         void processPeerAcks(uint16_t peerAck, uint32_t peerAckBits);
+
+        // remove or resend packet which was considered undelivered
+        void removeUndeliveredPacket(uint16_t seqNum);
+
+        // confirm packet, compute RTT, remove from send buffer
+        void confirmPacketDelivery(uint16_t seqNum);
 
         // mark connection dead (to be removed later), or revive (if received any packets)
         void markDead(bool value) { m_isDead = value; }
 
-        // remove or resend packet which was considered undelivered, it = m_sent.erase(it)
-        void removeUndeliveredPacket(uint16_t seqNum);
 
-        // confirm packet, compute RTT, it = m_sent.erase(it)
-        void confirmPacketDelivery(uint16_t seqNum);
+        static const size_t cQueueSize = 1024;
 
-        PacketExt& getSentPacketExt(uint16_t seqNum) { return m_sent[seqNum % m_sent.size()]; }
 
+        // owner of this connection
         SmartSocket& m_socket;
+
+        // remote address of this connection
         const udp::endpoint m_peer;
-        std::atomic<bool> m_isDead;          // peer disconnected
+        
+        // peer disconnected
+        std::atomic<bool> m_isDead;
+
+        // average round-trip time
         size_t m_averageRTT;
 
-        uint16_t m_seqNum;
-        uint16_t m_ack;         // most recently received peer seqNum
+        // time when received last packet
+        SCTimePoint m_recvTime;
+
+        // acknowledgements for received packets
+        uint16_t m_ack;
         uint32_t m_ackBits;
         
-        // packets awaiting aknowledge response, from most recent to old
-        std::vector<PacketExt> m_sent;
+        // packets awaiting aks response
+        SendPacketBuffer<cQueueSize> m_sentPackets;
 
-        // received packets are placed here, recent go first
-        RecvPacketBuffer<cQueueSize> m_received;
+        // received packets, ready to be dispatched
+        RecvPacketBuffer<cQueueSize> m_recvPackets;
     };
 
 

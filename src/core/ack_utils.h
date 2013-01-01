@@ -12,7 +12,7 @@ namespace core {
 
         // full check without overflows is: (n1 > n2 && n1 - n2 < mid) || (n1 < n2 && n2 - n1 > mid)
         // but if we do use integer overflow with operation-, it can be simplified
-        return uint16_t(n1 - n2) < mid;
+        return n1 == n2 ? false : uint16_t(n1 - n2) < mid;
     }
 
 

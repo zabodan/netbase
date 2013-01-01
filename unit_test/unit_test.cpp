@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "core/ack_utils.h"
-#include "core/mpmc_queue.h"
+#include "core/concurrent_queue.h"
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
@@ -9,8 +9,9 @@ using namespace core;
 
 BOOST_AUTO_TEST_CASE(ack_util_test)
 {
-	BOOST_CHECK(moreRecentSeqNum(4, 2));
+    BOOST_CHECK(moreRecentSeqNum(4, 2));
 	BOOST_CHECK(!moreRecentSeqNum(2, 5));
+    BOOST_CHECK(!moreRecentSeqNum(3,3));
 	BOOST_CHECK(moreRecentSeqNum(2, 65530));
 	BOOST_CHECK(!moreRecentSeqNum(65530, 5));
 
@@ -27,7 +28,7 @@ BOOST_AUTO_TEST_CASE(ack_util_test)
 
 BOOST_AUTO_TEST_CASE(mpmc_queue_test)
 {
-    mpmc_queue<int> queue;
+    mpsc_queue<int> queue;
     int tmp = 0;
 
     queue.push(1);
