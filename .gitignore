@@ -3,6 +3,7 @@ Release
 ipch
 logs
 *.sdf
+*.suo
 *.opensdf
 netbase_client/Debug
 netbase_client/Release
