@@ -66,6 +66,6 @@ namespace core {
         HouseKeepTimer m_housekeepTimer;
     };
 
+    typedef std::shared_ptr<SmartSocket> SmartSocketPtr;
 
 }
-

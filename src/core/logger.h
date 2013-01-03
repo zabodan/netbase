@@ -1,7 +1,7 @@
 #pragma once
 #include "core/concurrent_queue.h"
 #include <boost/noncopyable.hpp>
-#include <sstream>
+#include <iosfwd>
 #include <chrono>
 #include <thread>
 
@@ -22,28 +22,28 @@ namespace core
     typedef std::chrono::system_clock::time_point SCTimePoint;
 
 
-    enum LogSeverity
-    {
-        LogSeverity_Trace,
-        LogSeverity_Debug,
-        LogSeverity_Info,
-        LogSeverity_Warning,
-        LogSeverity_Error,
-        LogSeverity_Fatal,
-        LogSeverity_None
-    };
-
-
     class LogBase : private boost::noncopyable
     {
     public:
 
-        LogBase(LogSeverity severity)
+        enum Severity
+        {
+            Trace,
+            Debug,
+            Info,
+            Warning,
+            Error,
+            Fatal,
+            None
+        };
+
+
+        LogBase(Severity severity)
             : m_severity(severity)
         {
         }
 
-        ~LogBase();
+        virtual ~LogBase();
 
         template <class T, class P>
         LogBase& operator<<(const std::chrono::duration<T,P>& value)
@@ -74,7 +74,7 @@ namespace core
             m_buffer << " " << value;
         }
 
-        LogSeverity m_severity;
+        Severity m_severity;
         std::ostringstream m_buffer;
     };
 
@@ -89,52 +89,38 @@ namespace core
         }
     };
 
-#ifndef cLogLevel
-#define cLogLevel LogSeverity_Debug
+
+#ifndef MinLogLevel
+#define MinLogLevel LogBase::Debug
 #endif
+    
+#define cSourceLocation __FILE__ << ":" << __LINE__ << "[" << __FUNCTION__ << "]"
 
 
-#if cLogLevel <= LogSeverity_Trace
-#define cTrace   LogBase(LogSeverity_Trace)
-#else
-#define cTrace   LogNone()
-#endif
+    template <int SL, class Enable = void>
+    class Logger;
+    
+    template <int SL>
+    class Logger<SL, typename std::enable_if< (SL >= MinLogLevel) >::type> : public LogBase
+    {
+    public:
+        Logger() : LogBase(Severity(SL)) {}
+    };
 
-#if cLogLevel <= LogSeverity_Debug
-#define cDebug   LogBase(LogSeverity_Debug)
-#else
-#define cDebug   LogNone()
-#endif
+    template <int SL>
+    class Logger<SL, typename std::enable_if< (SL < MinLogLevel) >::type> : public LogNone
+    {
+    };
 
-#if cLogLevel <= LogSeverity_Info
-#define cInfo    LogBase(LogSeverity_Info)
-#else
-#define cInfo    LogNone()
-#endif
-
-#if cLogLevel <= LogSeverity_Warning
-#define cWarning LogBase(LogSeverity_Warning)
-#else
-#define cWarning LogNone()
-#endif
-
-#if cLogLevel <= LogSeverity_Error
-#define cError   LogBase(LogSeverity_Error)
-#else
-#define cError   LogNone()
-#endif
-
-#if cLogLevel <= LogSeverity_Fatal
-#define cFatal   LogBase(LogSeverity_Fatal)
-#else
-#define cFatal   LogNone()
-#endif
+    typedef Logger<LogBase::Trace>   LogTrace;
+    typedef Logger<LogBase::Debug>   LogDebug;
+    typedef Logger<LogBase::Info>    LogInfo;
+    typedef Logger<LogBase::Warning> LogWarning;
+    typedef Logger<LogBase::Error>   LogError;
+    typedef Logger<LogBase::Fatal>   LogFatal;
 
 
-#define cWHERE __FILE__ << ":" << __LINE__ << "[" << __FUNCTION__ << "]"
-
-
-    // io service, singleton interface, supposed to run only in one thread
+    // log i/o service, singleton interface, must run only in one thread
     class LogService : private boost::noncopyable
     {
     public:
@@ -143,12 +129,12 @@ namespace core
 
         void start(std::ostream* sink);
         void stop();
-        void log(LogSeverity severity, const std::string& message, const SCTimePoint& tp);
+        void log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp);
 
-        struct ScopedGuard
+        struct ScopeGuard
         {
-            ScopedGuard(std::ostream* sink) { LogService::instance().start(sink); }
-            ~ScopedGuard() { LogService::instance().stop(); }
+            ScopeGuard(std::ostream* sink) { LogService::instance().start(sink); }
+            ~ScopeGuard() { LogService::instance().stop(); }
         };
 
     private:
@@ -159,7 +145,7 @@ namespace core
 
         struct LogRecord
         {
-            LogSeverity severity;
+            LogBase::Severity severity;
             std::string message;
             SCTimePoint timestamp;
 

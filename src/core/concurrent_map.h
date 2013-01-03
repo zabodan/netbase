@@ -14,12 +14,12 @@ namespace core {
 
         ConcurrentMap() : m_locker(cMaxReaders)
         {
-            cTrace << "ConcurrentMap::ConcurrentMap()";
+            LogTrace() << "ConcurrentMap::ConcurrentMap()";
         }
 
         ~ConcurrentMap()
         {
-            cTrace << "ConcurrentMap::~ConcurrentMap()";
+            LogTrace() << "ConcurrentMap::~ConcurrentMap()";
         }
 
         void insert(const Key& key, const Value& value)

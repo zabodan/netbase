@@ -15,3 +15,7 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+#include <set>
+
+
+#define MinLogLevel LogBase::Debug

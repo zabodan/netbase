@@ -1,9 +1,6 @@
 #pragma once
-#include "core/logger.h"
 #include "core/ioservice_resource.h"
 #include <boost/asio/io_service.hpp>
-#include <memory>
-#include <thread>
 
 
 namespace core {
@@ -49,33 +46,19 @@ namespace core {
 
     private:
 
-        void run()
-        {
-            cTrace << "iothread: started ioservice event loop";
-            try
-            {
-                m_service->run();
-            }
-            catch (const std::exception& ex)
-            {
-                cFatal << ex.what() << cWHERE;
-            }
-            catch (...)
-            {
-                cFatal << "unknown exception" << cWHERE;
-            }
-            cTrace << "iothread: done";
-        }
+        void run();
 
         // shared ioservice
         IOServicePtr m_service;
 
-        // as boost::Asio reference says, create work on ioservice to make it run without any work until stopped
+        // as boost::asio reference says: create work item on ioservice
+        // to make it run without any handles until stopped
         IOService::work m_keepalive;
 
         // underlying io thread
         std::unique_ptr<std::thread> m_thread;
 
+        // dependent resources, which must be destroyed after ioservice thread stops
         std::set<std::shared_ptr<IOResource>> m_resources;
     };
 

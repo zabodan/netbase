@@ -9,7 +9,7 @@ using namespace std::chrono;
 int main(int argc, char **argv)
 {
 	std::locale::global(std::locale("rus"));
-    LogService::ScopedGuard logGuard(&std::cout);
+    LogService::ScopeGuard logGuard(&std::cout);
 
 	try
 	{
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 
         auto conn = socket->getOrCreateConnection(server);
 
-        cDebug << "client: start";
+        LogDebug() << "client: start";
         size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10;
         for (size_t tick = 0; tick < maxTicks; ++tick)
         {
@@ -42,14 +42,14 @@ int main(int argc, char **argv)
                 conn->asyncSend(packet);
             }
 
-            cDebug << "tick" << tick;
+            LogDebug() << "tick" << tick;
             std::this_thread::sleep_for(milliseconds(50));
         }
-        cDebug << "client: done";
+        LogDebug() << "client: done";
 	}
 	catch (const std::exception& e)
 	{
-		cError << e.what();
+		LogError() << e.what();
 	}
 
 	return 0;

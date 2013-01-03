@@ -9,7 +9,7 @@ namespace core
 
     LogBase::~LogBase()
     {
-        if (m_severity != LogSeverity_None)
+        if (m_severity != None)
             LogService::instance().log(m_severity, m_buffer.str(), system_clock::now());
     }
 
@@ -52,7 +52,7 @@ namespace core
         }
     }
     
-    void LogService::log(LogSeverity severity, const std::string& message, const SCTimePoint& tp)
+    void LogService::log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp)
     {
         LogRecord record = { severity, message, tp };
         m_queue.push(std::move(record));

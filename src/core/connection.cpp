@@ -28,9 +28,8 @@ namespace core {
 
     Connection::~Connection()
     {
-        cDebug << "stats for" << m_peer
-               << ": sent" << m_sentCount << "packets, confirmed" << m_ackdCount << "of them,"
-               << "received" << m_recvCount << "packets, latest RTT was" << milliseconds(m_averageRTT);
+        LogDebug() << "stats for" << m_peer << ": sent" << m_sentCount << "packets, confirmed" << m_ackdCount << "of them,"
+                   << "received" << m_recvCount << "packets, latest RTT was" << milliseconds(m_averageRTT);
     }
 
 
@@ -48,7 +47,7 @@ namespace core {
         
         if (old.packet)
         {
-            cWarning << "send buffer is full on connection with" << m_peer;
+            LogWarning() << "send buffer is full on connection with" << m_peer;
             if (old.resendLimit > 0)
                 asyncSend(old.packet, old.resendLimit - 1);
         }
@@ -57,7 +56,7 @@ namespace core {
         m_socket.rawSocket().async_send_to(boost::asio::buffer(packet->buffer()), m_peer,
             boost::bind(&Connection::handleSend, this, packet, boost::asio::placeholders::error));
 
-        cDebug << "sending packet" << seqNum << "with protocol" << packet->header().protocol << "to" << m_peer;
+        LogDebug() << "sending packet" << seqNum << "with protocol" << packet->header().protocol << "to" << m_peer;
         ++m_sentCount;
     }
 
@@ -65,13 +64,13 @@ namespace core {
     // handler for logging errors during async_send_to
     void Connection::handleSend(const PacketPtr& packet, const boost::system::error_code& error)
     {
-        cTrace << "[+] Connection::handleSend";
+        LogTrace() << "[+] Connection::handleSend";
         if (error)
         {
             m_socket.notifyObservers([&](ISocketStateObserver& observer){ observer.onError(shared_from_this(), error); });
             removeUndeliveredPacket(packet->header().seqNum);
         }
-        cTrace << "[-] Connection::handleSend";
+        LogTrace() << "[-] Connection::handleSend";
     }
 
     void Connection::removeUndeliveredPacket(uint16_t seqNum)
@@ -93,8 +92,8 @@ namespace core {
             milliseconds observedRTT = duration_cast<milliseconds>(system_clock::now() - pExt.timestamp);
             m_averageRTT = (9 * m_averageRTT + static_cast<size_t>(observedRTT.count())) / 10;
             
-            cDebug << "acknowledged packet" << pExt.packet->header().seqNum << "for peer" << m_peer
-                   << "RTT is" << observedRTT << "averageRTT" << milliseconds(m_averageRTT);
+            LogDebug() << "acknowledged packet" << pExt.packet->header().seqNum << "for peer" << m_peer
+                       << "RTT is" << observedRTT << "averageRTT" << milliseconds(m_averageRTT);
             ++m_ackdCount;
         }
     }
@@ -104,7 +103,7 @@ namespace core {
     // for insertion point from most recent to oldest
     void Connection::handleReceive(const PacketPtr& packet)
     {
-        cTrace << "[+] Connection::handleReceive";
+        LogTrace() << "[+] Connection::handleReceive";
 
         m_recvTime = system_clock::now();
         ++m_recvCount;
@@ -117,12 +116,12 @@ namespace core {
         if (old != nullptr)
         {
             if (old->header().seqNum == header.seqNum)
-                cDebug << "received packet" << header.seqNum << "duplicate from" << m_peer;
+                LogDebug() << "received packet" << header.seqNum << "duplicate from" << m_peer;
             else
-                cError << "recv buffer seems full, discarding old packet from" << m_peer;
+                LogError() << "recv buffer seems full, discarding old packet from" << m_peer;
         }
 
-        cTrace << "[-] Connection::handleReceive";
+        LogTrace() << "[-] Connection::handleReceive";
     }
 
 

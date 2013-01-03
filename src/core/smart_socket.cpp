@@ -22,7 +22,7 @@ namespace core {
         m_socket(*ioservice, m_localhost),
         m_housekeepTimer(*m_ioservice)
     {
-        cTrace << "SmartSocket::SmartSocket";
+        LogTrace() << "SmartSocket::SmartSocket";
         startReceive();
 
         m_housekeepTimer.expires_from_now(cHouseKeepingPeriod);
@@ -32,7 +32,7 @@ namespace core {
     SmartSocket::~SmartSocket()
     {
         notifyObservers([](ISocketStateObserver& observer){ observer.onSocketShutdown(); });
-        cTrace << "SmartSocket::~SmartSocket";
+        LogTrace() << "SmartSocket::~SmartSocket";
     }
 
     ConnectionPtr SmartSocket::getOrCreateConnection(const udp::endpoint& remote)
@@ -96,11 +96,11 @@ namespace core {
         }
         catch (const std::exception& ex)
         {
-            cError << ex.what();
+            LogError() << ex.what();
         }
         catch (...)
         {
-            cFatal << "unknown exception" << cWHERE;
+            LogFatal() << "unknown exception" << cSourceLocation;
         }
         startReceive();
     }
@@ -133,7 +133,7 @@ namespace core {
     {
         if (error == boost::asio::error::operation_aborted)
         {
-            cDebug << "HouseKeeping timer was aborted";
+            LogDebug() << "HouseKeeping timer was aborted";
             return;
         }
 
@@ -148,7 +148,7 @@ namespace core {
         m_connections.for_each_value([&](const ConnectionPtr& conn){
             if (conn->lastActivityTime() < timeoutStart)
             {
-                cDebug << "connection with" << conn->peer() << "timed out";
+                LogDebug() << "connection with" << conn->peer() << "timed out";
                 conn->markDead(true);
             }
             if (conn->isDead())
