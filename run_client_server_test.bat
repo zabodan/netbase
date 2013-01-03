@@ -2,8 +2,8 @@ set target=debug
 
 erase /q logs\*.*
 
-start "server" cmd /c "%target%\netbase_server.exe 170 > logs\_server.log"
+start "server" cmd /c "%target%\netbase_server.exe 150 > logs\_server.log"
 
 for /L %%i in (1,1,100) do (
-  start "client %%i" cmd /c "%target%\netbase_client.exe 100 > logs\_client_%%i.log"
+  start "client %%i" cmd /c "%target%\netbase_client.exe 80 > logs\_client_%%i.log"
 )

@@ -12,7 +12,15 @@ namespace core {
     public:
         enum { cMaxReaders = 8 };
 
-        ConcurrentMap() : m_locker(cMaxReaders) {}
+        ConcurrentMap() : m_locker(cMaxReaders)
+        {
+            cTrace << "ConcurrentMap::ConcurrentMap()";
+        }
+
+        ~ConcurrentMap()
+        {
+            cTrace << "ConcurrentMap::~ConcurrentMap()";
+        }
 
         void insert(const Key& key, const Value& value)
         {

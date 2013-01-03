@@ -33,34 +33,34 @@ int main(int argc, char **argv)
 
     try
     {
-        auto io_service = std::make_shared<boost::asio::io_service>();
-        
-        SmartSocket socket(io_service, 13999);
-        socket.addObserver(std::make_shared<SocketStateLogger>());
+        IOServiceThread ioThread;
+
+        auto socket = std::make_shared<SmartSocket>(ioThread.getService(), 13999);
+        socket->addObserver(std::make_shared<SocketStateLogger>());
+
+        ioThread.addResource(socket);
 
         auto mod_p1 = std::make_shared<ModP1>();
-        socket.registerProtocolListener(1, mod_p1);
+        socket->registerProtocolListener(1, mod_p1);
 
-        IOServiceThread ioThread(*io_service);
-
-        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 1000;
+        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10000;
         for (size_t tick = 0; tick < maxTicks; ++tick)
         {
             auto ts1 = system_clock::now();
 
             mod_p1->receivedCount = 0;
-            socket.dispatchReceivedPackets();
+            socket->dispatchReceivedPackets();
 
             if (mod_p1->receivedCount > 0)
             {
                 auto packet = std::make_shared<Packet>(2);
-                socket.sendEveryone(packet);
+                socket->sendEveryone(packet);
             }
 
             if (tick > 0 && tick % 10 == 0)
             {
                 static const uint16_t cHeartBitProtocol = 3;
-                socket.sendEveryone(std::make_shared<Packet>(cHeartBitProtocol));
+                socket->sendEveryone(std::make_shared<Packet>(cHeartBitProtocol));
             }
 
             auto ts2 = system_clock::now();

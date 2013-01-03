@@ -22,21 +22,23 @@ namespace core
     typedef std::chrono::system_clock::time_point SCTimePoint;
 
 
+    enum LogSeverity
+    {
+        LogSeverity_Trace,
+        LogSeverity_Debug,
+        LogSeverity_Info,
+        LogSeverity_Warning,
+        LogSeverity_Error,
+        LogSeverity_Fatal,
+        LogSeverity_None
+    };
+
+
     class LogBase : private boost::noncopyable
     {
     public:
 
-        enum Severity
-        {
-            None = 0,
-            Debug,
-            Info,
-            Warning,
-            Error,
-            Fatal
-        };
-
-        LogBase(Severity severity)
+        LogBase(LogSeverity severity)
             : m_severity(severity)
         {
         }
@@ -72,16 +74,63 @@ namespace core
             m_buffer << " " << value;
         }
 
-        Severity m_severity;
+        LogSeverity m_severity;
         std::ostringstream m_buffer;
     };
 
 
-#define cDebug   LogBase(LogBase::Debug)
-#define cInfo    LogBase(LogBase::Info)
-#define cWarning LogBase(LogBase::Warning)
-#define cError   LogBase(LogBase::Error)
-#define cFatal   LogBase(LogBase::Fatal)
+    class LogNone
+    {
+    public:
+        template <class T>
+        LogNone& operator<<(const T& value)
+        {
+            return *this;
+        }
+    };
+
+#ifndef cLogLevel
+#define cLogLevel LogSeverity_Debug
+#endif
+
+
+#if cLogLevel <= LogSeverity_Trace
+#define cTrace   LogBase(LogSeverity_Trace)
+#else
+#define cTrace   LogNone()
+#endif
+
+#if cLogLevel <= LogSeverity_Debug
+#define cDebug   LogBase(LogSeverity_Debug)
+#else
+#define cDebug   LogNone()
+#endif
+
+#if cLogLevel <= LogSeverity_Info
+#define cInfo    LogBase(LogSeverity_Info)
+#else
+#define cInfo    LogNone()
+#endif
+
+#if cLogLevel <= LogSeverity_Warning
+#define cWarning LogBase(LogSeverity_Warning)
+#else
+#define cWarning LogNone()
+#endif
+
+#if cLogLevel <= LogSeverity_Error
+#define cError   LogBase(LogSeverity_Error)
+#else
+#define cError   LogNone()
+#endif
+
+#if cLogLevel <= LogSeverity_Fatal
+#define cFatal   LogBase(LogSeverity_Fatal)
+#else
+#define cFatal   LogNone()
+#endif
+
+
 #define cWHERE __FILE__ << ":" << __LINE__ << "[" << __FUNCTION__ << "]"
 
 
@@ -94,7 +143,7 @@ namespace core
 
         void start(std::ostream* sink);
         void stop();
-        void log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp);
+        void log(LogSeverity severity, const std::string& message, const SCTimePoint& tp);
 
         struct ScopedGuard
         {
@@ -110,7 +159,7 @@ namespace core
 
         struct LogRecord
         {
-            LogBase::Severity severity;
+            LogSeverity severity;
             std::string message;
             SCTimePoint timestamp;
 

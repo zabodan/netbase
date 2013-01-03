@@ -13,26 +13,28 @@ int main(int argc, char **argv)
 
 	try
 	{
-		auto io_service = std::make_shared<boost::asio::io_service>();
+        IOServiceThread ioThread;
 
-        SmartSocket socket(io_service, 0);
-        socket.addObserver(std::make_shared<SocketStateLogger>());
+        auto socket = std::make_shared<SmartSocket>(ioThread.getService(), 0);
+        socket->addObserver(std::make_shared<SocketStateLogger>());
         
-        udp::resolver resolver(*io_service);
+        ioThread.addResource(socket);
+
+
+        udp::resolver resolver(*ioThread.getService());
 		udp::resolver::query serverQuery(udp::v4(), "localhost", "13999");
         udp::endpoint server = *resolver.resolve(serverQuery);
 
-        auto conn = socket.getOrCreateConnection(server);
+        auto conn = socket->getOrCreateConnection(server);
 
-        IOServiceThread ioThread(*io_service);
-
-        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 1000;
+        cDebug << "client: start";
+        size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10;
         for (size_t tick = 0; tick < maxTicks; ++tick)
         {
             if (conn->isDead())
                 break;
 
-            socket.dispatchReceivedPackets();
+            socket->dispatchReceivedPackets();
             
             //if (tick < 20)
             {
@@ -43,6 +45,7 @@ int main(int argc, char **argv)
             cDebug << "tick" << tick;
             std::this_thread::sleep_for(milliseconds(50));
         }
+        cDebug << "client: done";
 	}
 	catch (const std::exception& e)
 	{

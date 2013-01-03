@@ -4,6 +4,7 @@
 #include "core/observable.h"
 #include "core/socket_state_observer.h"
 #include "core/concurrent_map.h"
+#include "core/ioservice_resource.h"
 #include <boost/signal.hpp>
 #include <boost/asio/system_timer.hpp>
 #include <map>
@@ -16,7 +17,9 @@ namespace core {
     typedef ConcurrentMap<udp::endpoint, ConnectionPtr> ConnectionsMap;
 
 
-    class SmartSocket : public Observable<ISocketStateObserver>
+    class SmartSocket:
+        public Observable<ISocketStateObserver>,
+        public IOResource
     {
     public:
 

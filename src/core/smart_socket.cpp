@@ -22,6 +22,7 @@ namespace core {
         m_socket(*ioservice, m_localhost),
         m_housekeepTimer(*m_ioservice)
     {
+        cTrace << "SmartSocket::SmartSocket";
         startReceive();
 
         m_housekeepTimer.expires_from_now(cHouseKeepingPeriod);
@@ -31,6 +32,7 @@ namespace core {
     SmartSocket::~SmartSocket()
     {
         notifyObservers([](ISocketStateObserver& observer){ observer.onSocketShutdown(); });
+        cTrace << "SmartSocket::~SmartSocket";
     }
 
     ConnectionPtr SmartSocket::getOrCreateConnection(const udp::endpoint& remote)

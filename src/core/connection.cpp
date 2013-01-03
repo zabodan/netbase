@@ -65,11 +65,13 @@ namespace core {
     // handler for logging errors during async_send_to
     void Connection::handleSend(const PacketPtr& packet, const boost::system::error_code& error)
     {
+        cTrace << "[+] Connection::handleSend";
         if (error)
         {
             m_socket.notifyObservers([&](ISocketStateObserver& observer){ observer.onError(shared_from_this(), error); });
             removeUndeliveredPacket(packet->header().seqNum);
         }
+        cTrace << "[-] Connection::handleSend";
     }
 
     void Connection::removeUndeliveredPacket(uint16_t seqNum)
@@ -102,6 +104,8 @@ namespace core {
     // for insertion point from most recent to oldest
     void Connection::handleReceive(const PacketPtr& packet)
     {
+        cTrace << "[+] Connection::handleReceive";
+
         m_recvTime = system_clock::now();
         ++m_recvCount;
 
@@ -117,6 +121,8 @@ namespace core {
             else
                 cError << "recv buffer seems full, discarding old packet from" << m_peer;
         }
+
+        cTrace << "[-] Connection::handleReceive";
     }
 
 

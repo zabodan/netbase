@@ -9,7 +9,7 @@ namespace core
 
     LogBase::~LogBase()
     {
-        if (m_severity != None)
+        if (m_severity != LogSeverity_None)
             LogService::instance().log(m_severity, m_buffer.str(), system_clock::now());
     }
 
@@ -52,7 +52,7 @@ namespace core
         }
     }
     
-    void LogService::log(LogBase::Severity severity, const std::string& message, const SCTimePoint& tp)
+    void LogService::log(LogSeverity severity, const std::string& message, const SCTimePoint& tp)
     {
         LogRecord record = { severity, message, tp };
         m_queue.push(std::move(record));
@@ -77,7 +77,7 @@ namespace core
 
     void LogService::LogRecord::writeTo(std::ostream& out) const
     {
-        static const char* prefix[] = { " -N-", " -D-", " -I-", " -W-", " -E-", " -F-" };
+        static const char* prefix[] = { " -T-", " -D-", " -I-", " -W-", " -E-", " -F-", " -N-" };
 
         // note: as long as we have single writing thread, static buffers are fine
         static std::time_t tt;

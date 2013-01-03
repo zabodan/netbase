@@ -4,6 +4,9 @@
     <Filter Include="core">
       <UniqueIdentifier>{06962348-2e69-43b7-a331-a7c345173332}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{681ac3d3-1ebf-4433-940d-83230fae0023}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -28,6 +31,9 @@
     </ClInclude>
     <ClInclude Include="..\src\core\ack_utils.h">
       <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\test_server.h">
+      <Filter>test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

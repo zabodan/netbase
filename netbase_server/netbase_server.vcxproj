@@ -87,6 +87,7 @@
     <ClInclude Include="..\src\core\packet.h" />
     <ClInclude Include="..\src\core\packet_dispatcher.h" />
     <ClInclude Include="..\src\core\smart_socket.h" />
+    <ClInclude Include="..\src\core\test_server.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
