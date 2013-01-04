@@ -90,6 +90,7 @@
     <ClInclude Include="..\src\core\packet.h" />
     <ClInclude Include="..\src\core\packet_buffer.h" />
     <ClInclude Include="..\src\core\packet_dispatcher.h" />
+    <ClInclude Include="..\src\core\rw_spinlock.h" />
     <ClInclude Include="..\src\core\smart_socket.h" />
     <ClInclude Include="..\src\core\socket_state_observer.h" />
     <ClInclude Include="stdafx.h" />

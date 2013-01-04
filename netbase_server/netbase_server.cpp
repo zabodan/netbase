@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     {
         IOServiceThread ioThread;
 
-        const size_t maxTicks = argc > 1 ? atoi(argv[1]) : 10000;
+        const size_t maxTicks = argc > 1 ? atoi(argv[1]) : 1000;
         TestServer server(ioThread, 13999, maxTicks);
     }
     catch (const std::exception& ex)
@@ -24,4 +24,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-

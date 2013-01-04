@@ -14,7 +14,6 @@ namespace core
     }
 
 
-
     LogService::LogService()
         : m_sink(nullptr), m_stopRequested(false)
     {

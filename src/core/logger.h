@@ -1,6 +1,7 @@
 #pragma once
 #include "core/concurrent_queue.h"
 #include <boost/noncopyable.hpp>
+#include <memory>
 #include <iosfwd>
 #include <chrono>
 #include <thread>
@@ -79,7 +80,7 @@ namespace core
     };
 
 
-    class LogNone
+    class LogNone : private boost::noncopyable
     {
     public:
         template <class T>

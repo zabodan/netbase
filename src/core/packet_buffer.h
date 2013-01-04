@@ -2,7 +2,6 @@
 #include "core/packet.h"
 #include "core/ack_utils.h"
 #include <atomic>
-#include <array>
 
 
 namespace core {
@@ -100,8 +99,8 @@ namespace core {
                 ++m_tail;
         }
 
-        std::atomic<uint16_t> m_head;
-        std::atomic<uint16_t> m_tail;
+        std::atomic<uint16_t> m_head; // == most recent seqNum + 1
+        std::atomic<uint16_t> m_tail; // oldest seqNum
         PacketExt m_buffer[N];
     };
 
@@ -115,11 +114,14 @@ namespace core {
             
         PacketPtr insert(uint16_t seqNum, const PacketPtr& value)
         {
-            if (moreRecentSeqNum(seqNum, m_head))
+            if (empty())
+                m_head = m_tail = seqNum;
+            else if (moreRecentSeqNum(seqNum, m_head))
                 m_head = seqNum;
-            if (moreRecentSeqNum(m_tail, seqNum))
+            else if (moreRecentSeqNum(m_tail, seqNum))
                 m_tail = seqNum;
-            return m_buffer[seqNum % N].exchange(value);
+
+            return get(seqNum).exchange(value);
         }
 
         bool empty() const
@@ -130,13 +132,19 @@ namespace core {
         PacketPtr removeLast()
         {
             uint16_t seqNum = m_tail.fetch_add(1);
-            return m_buffer[seqNum % N].exchange(nullptr);
+            return get(seqNum).exchange(nullptr);
         }
 
     private:
-        std::atomic<uint16_t> m_head;
-        std::atomic<uint16_t> m_tail;
-        std::atomic<PacketPtr> m_buffer[N]; // spinlock-protected exchange
+
+        std::atomic<PacketPtr>& get(uint16_t seqNum)
+        {
+            return m_buffer[seqNum % N];
+        }
+
+        std::atomic<uint16_t> m_head; // most recent seqNum
+        std::atomic<uint16_t> m_tail; // oldest seqNum
+        std::atomic<PacketPtr> m_buffer[N];
     };
 
 }

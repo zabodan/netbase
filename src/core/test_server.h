@@ -1,7 +1,6 @@
 #pragma once
 #include "core/smart_socket.h"
 #include "core/ioservice_thread.h"
-#include "core/socket_state_observer.h"
 
 
 namespace core
@@ -44,7 +43,7 @@ namespace core
             m_modP1 = std::make_shared<ModP1>();
             m_socket->registerProtocolListener(1, m_modP1);
 
-            m_serverThread.reset(new std::thread([&]{ run(maxTicks); }));
+            m_serverThread.reset(new std::thread([=]{ run(maxTicks); }));
         }
 
         ~TestServer()
@@ -97,6 +96,5 @@ namespace core
         std::unique_ptr<std::thread> m_serverThread;
         std::shared_ptr<ModP1> m_modP1;
     };
-
 
 }

@@ -113,7 +113,7 @@ namespace core {
         processPeerAcks(header.ack, header.ackBits);
 
         PacketPtr old = m_recvPackets.insert(header.seqNum, packet);
-        if (old != nullptr)
+        if (old)
         {
             if (old->header().seqNum == header.seqNum)
                 LogDebug() << "received packet" << header.seqNum << "duplicate from" << m_peer;

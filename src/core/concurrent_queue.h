@@ -51,6 +51,7 @@ namespace core {
         char pad3[cCacheLineSize - sizeof(std::atomic<node*>)];
     };
 
+
     template <typename T>
     struct mpsc_queue : public queue_base<T>
     {
@@ -74,6 +75,7 @@ namespace core {
         std::atomic<node*> m_last;
         char pad3[cCacheLineSize - sizeof(std::atomic<node*>)];
     };
+
 #pragma pack (pop)
 
 
