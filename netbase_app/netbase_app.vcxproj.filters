@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="..\src\core\ack_utils.h">
@@ -39,9 +36,6 @@
     <ClInclude Include="..\src\core\packet_dispatcher.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\rw_spinlock.h">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\core\smart_socket.h">
       <Filter>core</Filter>
     </ClInclude>
@@ -52,6 +46,9 @@
       <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\test_server.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\fast_spinlock.h">
       <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,5 +75,8 @@
     <Filter Include="core">
       <UniqueIdentifier>{0843a963-8476-45a2-9f17-52dc48ad073f}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ToDo.txt" />
   </ItemGroup>
 </Project>

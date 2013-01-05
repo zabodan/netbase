@@ -1,5 +1,5 @@
 #pragma once
-#include "core/logger.h"
+#include "core/ack_utils.h"
 #include <boost/asio/ip/udp.hpp>
 #include <cstdint>
 
@@ -11,14 +11,18 @@ namespace core {
 
     static const size_t cMaxUdpPacketSize = 1024;
 
+    // 
+    typedef ack17_t ack_type;
 
+
+#pragma pack (push, 1)
     struct PacketHeader
     {
         uint16_t protocol;
         uint16_t seqNum;
-        uint16_t ack;
-        uint32_t ackBits;
+        ack_type ack;
     };
+#pragma pack (pop)
 
 
     class Packet

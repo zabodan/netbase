@@ -78,13 +78,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\src\core\ack_utils.h" />
     <ClInclude Include="..\src\core\concurrent_map.h" />
     <ClInclude Include="..\src\core\concurrent_queue.h" />
     <ClInclude Include="..\src\core\connection.h" />
+    <ClInclude Include="..\src\core\fast_spinlock.h" />
     <ClInclude Include="..\src\core\ioservice_resource.h" />
     <ClInclude Include="..\src\core\ioservice_thread.h" />
     <ClInclude Include="..\src\core\logger.h" />
@@ -92,7 +90,6 @@
     <ClInclude Include="..\src\core\packet.h" />
     <ClInclude Include="..\src\core\packet_buffer.h" />
     <ClInclude Include="..\src\core\packet_dispatcher.h" />
-    <ClInclude Include="..\src\core\rw_spinlock.h" />
     <ClInclude Include="..\src\core\smart_socket.h" />
     <ClInclude Include="..\src\core\socket_state_observer.h" />
     <ClInclude Include="..\src\core\test_client.h" />
@@ -111,6 +108,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ToDo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

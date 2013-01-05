@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "core/connection.h"
 #include "core/smart_socket.h"
-#include "core/ack_utils.h"
+#include "core/logger.h"
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include <chrono>
@@ -16,8 +16,6 @@ namespace core {
       : m_socket(socket),
         m_peer(peer),
         m_isDead(false),
-        m_ack(0),
-        m_ackBits(0),
         m_averageRTT(50),
         m_recvCount(0),
         m_sentCount(0),
@@ -43,7 +41,7 @@ namespace core {
     void Connection::doSend(const PacketPtr& packet, size_t resendLimit)
     {
         // store packet in the send buffer, get previous value
-        PacketExt old = m_sentPackets.store(packet, resendLimit, m_ack, m_ackBits);
+        PacketExt old = m_sentPackets.store(packet, resendLimit, m_ack);
         
         if (old.packet)
         {
@@ -109,8 +107,12 @@ namespace core {
         ++m_recvCount;
 
         const PacketHeader& header = packet->header();
-        updateAcks(m_ack, m_ackBits, header.seqNum);
-        processPeerAcks(header.ack, header.ackBits);
+        
+        // remember received packet in my ack
+        m_ack.updateForSeqNum(header.seqNum);
+
+        // confirm sent packets based on peer ack
+        processPeerAcks(header.ack);
 
         PacketPtr old = m_recvPackets.insert(header.seqNum, packet);
         if (old)
@@ -128,20 +130,17 @@ namespace core {
     // clean up sent buffer, confirm delivered packets and remove (or resend) old ones
     //   peerAck     - latest seqNum that peer received
     //   peerAckBits - next 32 acks after latest
-    void Connection::processPeerAcks(uint16_t peerAck, uint32_t peerAckBits)
+    void Connection::processPeerAcks(const ack_type& peerAck)
     {
-        confirmPacketDelivery(peerAck);
-        for (uint16_t delta = 1; delta <= 32; ++delta)
-        {
-            uint32_t bit = ackBitFromDelta(delta);
-            if ((peerAckBits & bit) == bit)
-                confirmPacketDelivery(peerAck - delta);
-        }
+        // confirm acknowledged packets
+        peerAck.forEachAckedSeqNum([&](uint16_t seqNum){
+            confirmPacketDelivery(seqNum);
+        });
 
         // consider oldest packet undelivered if its seqNum is less then peerAck - 256,
         // or timestamp is more then two seconds away from current time
         const auto minTime = system_clock::now() - seconds(2);
-        const uint16_t minSeqNum = peerAck - 256;
+        const uint16_t minSeqNum = peerAck.latestSeqNum() - 256;
 
         while (!m_sentPackets.empty())
         {

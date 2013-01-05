@@ -1,5 +1,5 @@
 #pragma once
-#include "core/rw_spinlock.h"
+#include "core/fast_spinlock.h"
 #include <set>
 
 namespace core {
@@ -14,27 +14,27 @@ namespace core {
 
         void addObserver(const ObserverPtr& observer)
         {
-            R4WSpinLock::WriteGuard guard(m_locker);
+            FastSpinLock::Guard guard(m_locker);
             m_observers.insert(observer);
         }
 
         void removeObserver(const ObserverPtr& observer)
         {
-            R4WSpinLock::WriteGuard guard(m_locker);
+            FastSpinLock::Guard guard(m_locker);
             m_observers.erase(observer);
         }
 
         template <class Subject>
         void notifyObservers(Subject subj)
         {
-            R4WSpinLock::ReadGuard guard(m_locker);
+            FastSpinLock::Guard guard(m_locker);
             for (auto& observer : m_observers)
                 subj(*observer);
         }
 
     protected:
 
-        R4WSpinLock m_locker;
+        FastSpinLock m_locker;
         std::set<ObserverPtr> m_observers;
     };
 

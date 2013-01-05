@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "core/test_server.h"
+#include "core/test_client.h"
 
 using namespace core;
 using namespace std::chrono;
@@ -31,15 +32,20 @@ int main(int argc, char **argv)
     {
         IOServiceThread ioThread;
 
-        const size_t maxTicks = argc > 1 ? atoi(argv[1]) : 1000;
-        TestServer server(ioThread, 13999, maxTicks);
+        const size_t maxTicks = argc > 2 ? atoi(argv[2]) : 1000;
+        const std::string mode = argc > 1 ? argv[1] : "server";
 
-        /*
-        TestClient client(ioThread, 0, maxTicks);
-        TestClient client2(ioThread, 0, maxTicks);
-        //TestClient client3(ioThread, 0, maxTicks);
-        //TestClient client4(ioThread, 0, maxTicks);
-        */
+        if (mode == "server")
+        {
+            TestServer server(ioThread, 13999, maxTicks);
+        }
+        else
+        {
+            TestClient client(ioThread, 0, maxTicks);
+            TestClient client2(ioThread, 0, maxTicks);
+            //TestClient client3(ioThread, 0, maxTicks);
+            //TestClient client4(ioThread, 0, maxTicks);
+        }
     }
     catch (const std::exception& ex)
     {

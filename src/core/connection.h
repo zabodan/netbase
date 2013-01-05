@@ -1,7 +1,7 @@
 #pragma once
 #include "core/packet.h"
 #include "core/packet_buffer.h"
-#include "core/logger.h"
+#include "core/fast_spinlock.h"
 #include <set>
 
 
@@ -45,7 +45,7 @@ namespace core {
         void handleReceive(const PacketPtr& packet);
 
         // clean up send buffer, confirm delivered packets and remove (or resend) old ones
-        void processPeerAcks(uint16_t peerAck, uint32_t peerAckBits);
+        void processPeerAcks(const ack_type& peerAck);
 
         // remove or resend packet which was considered undelivered
         void removeUndeliveredPacket(uint16_t seqNum);
@@ -79,8 +79,7 @@ namespace core {
         SCTimePoint m_recvTime;
 
         // acknowledgements for received packets
-        uint16_t m_ack;
-        uint32_t m_ackBits;
+        ack_type m_ack;
         
         // packets awaiting aks response
         SendPacketBuffer<cQueueSize> m_sentPackets;

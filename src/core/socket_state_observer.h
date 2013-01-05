@@ -1,5 +1,6 @@
 #pragma once
 #include "core/connection.h"
+#include "core/logger.h"
 
 
 namespace core {

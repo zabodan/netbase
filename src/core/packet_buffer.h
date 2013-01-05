@@ -14,12 +14,11 @@ namespace core {
         PacketExt() : resendLimit(0)
         {}
 
-        PacketExt(const PacketPtr& p, size_t resend, uint16_t seqNum, uint16_t ack, uint32_t ackBits)
+        PacketExt(const PacketPtr& p, size_t resend, uint16_t seqNum, const ack_type& ack)
             : packet(p), resendLimit(resend), timestamp(system_clock::now())
         {
             packet->header().seqNum = seqNum;
             packet->header().ack = ack;
-            packet->header().ackBits = ackBits;
         }
 
         PacketPtr packet;
@@ -40,11 +39,12 @@ namespace core {
         SendPacketBuffer() : m_head(1), m_tail(1)
         {}
 
-        PacketExt store(const PacketPtr& p, size_t resend, uint16_t ack, uint32_t ackBits)
+        PacketExt store(const PacketPtr& p, size_t resend, const ack_type& ack)
         {
             uint16_t seqNum = m_head.fetch_add(1);
+            
             PacketExt pExt = get(seqNum);
-            get(seqNum) = PacketExt(p, resend, seqNum, ack, ackBits);
+            get(seqNum) = PacketExt(p, resend, seqNum, ack);
             return pExt;
         }
 

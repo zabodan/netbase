@@ -76,9 +76,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\src\core\ack_utils.h" />
     <ClInclude Include="..\src\core\concurrent_map.h" />
     <ClInclude Include="..\src\core\concurrent_queue.h" />
@@ -90,7 +87,6 @@
     <ClInclude Include="..\src\core\packet.h" />
     <ClInclude Include="..\src\core\packet_buffer.h" />
     <ClInclude Include="..\src\core\packet_dispatcher.h" />
-    <ClInclude Include="..\src\core\rw_spinlock.h" />
     <ClInclude Include="..\src\core\smart_socket.h" />
     <ClInclude Include="..\src\core\socket_state_observer.h" />
     <ClInclude Include="stdafx.h" />
