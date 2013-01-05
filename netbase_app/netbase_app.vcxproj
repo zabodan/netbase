@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{07E89AB2-6C6D-425C-B917-ED2E9B66FC25}</ProjectGuid>
+    <ProjectGuid>{7E686E89-A207-4E98-A653-3A0CBAA55ED0}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>netbase_server</RootNamespace>
+    <RootNamespace>netbase_app</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,11 +41,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\src;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\src;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -54,7 +54,6 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -69,8 +68,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>false</SDLCheck>
-      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -94,6 +92,7 @@
     <ClInclude Include="..\src\core\packet.h" />
     <ClInclude Include="..\src\core\packet_buffer.h" />
     <ClInclude Include="..\src\core\packet_dispatcher.h" />
+    <ClInclude Include="..\src\core\rw_spinlock.h" />
     <ClInclude Include="..\src\core\smart_socket.h" />
     <ClInclude Include="..\src\core\socket_state_observer.h" />
     <ClInclude Include="..\src\core\test_client.h" />
@@ -107,7 +106,7 @@
     <ClCompile Include="..\src\core\logger.cpp" />
     <ClCompile Include="..\src\core\packet_dispatcher.cpp" />
     <ClCompile Include="..\src\core\smart_socket.cpp" />
-    <ClCompile Include="netbase_server.cpp" />
+    <ClCompile Include="netbase_app.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

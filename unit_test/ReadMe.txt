@@ -9,3 +9,7 @@ TODOs
 
 - big task: create protocol for reliable object (file or big buffer) delivery
 
+
+- fast spinlock
+- config
+- program options
