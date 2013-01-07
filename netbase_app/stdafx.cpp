@@ -1,8 +1,15 @@
-// stdafx.cpp : source file that includes just the standard includes
-// netbase_app.pch will be the pre-compiled header
-// stdafx.obj will contain the pre-compiled type information
-
 #include "stdafx.h"
 
-// TODO: reference any additional headers you need in STDAFX.H
-// and not in this file
+
+#ifdef _DEBUG
+#  pragma comment(lib, "opengl32.lib")
+#  pragma comment(lib, "glew32sd.lib")
+#  pragma comment(lib, "sfml-system-d.lib")
+#  pragma comment(lib, "sfml-window-d.lib")
+#else
+#  pragma comment(lib, "opengl32.lib")
+#  pragma comment(lib, "glew32s.lib")
+#  pragma comment(lib, "sfml-system.lib")
+#  pragma comment(lib, "sfml-window.lib")
+#endif
+

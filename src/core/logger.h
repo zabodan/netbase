@@ -10,14 +10,21 @@
 namespace core
 {
 
+    namespace sc = std::chrono;
 
-    template <class T> struct duration_suffix;
-    template <> struct duration_suffix<std::chrono::hours>        { static const char* value() { return "h"; } };
-    template <> struct duration_suffix<std::chrono::minutes>      { static const char* value() { return "m"; } };
-    template <> struct duration_suffix<std::chrono::seconds>      { static const char* value() { return "s"; } };
-    template <> struct duration_suffix<std::chrono::milliseconds> { static const char* value() { return "ms"; } };
-    template <> struct duration_suffix<std::chrono::microseconds> { static const char* value() { return "mks"; } };
-    template <> struct duration_suffix<std::chrono::nanoseconds>  { static const char* value() { return "ns"; } };
+    template <class P> struct duration_suffix;
+    template <> struct duration_suffix<std::ratio<3600>> { static const char* value() { return "h"; } };
+    template <> struct duration_suffix<std::ratio<60>>   { static const char* value() { return "m"; } };
+    template <> struct duration_suffix<std::ratio<1>>    { static const char* value() { return "s"; } };
+    template <> struct duration_suffix<std::milli>       { static const char* value() { return "ms"; } };
+    template <> struct duration_suffix<std::micro>       { static const char* value() { return "mks"; } };
+    template <> struct duration_suffix<std::nano>        { static const char* value() { return "ns"; } };
+
+    struct set_fixed
+    {
+        set_fixed(size_t d) : digits(d) {}
+        size_t digits;
+    };
 
 
     typedef std::chrono::system_clock::time_point SCTimePoint;
@@ -46,11 +53,17 @@ namespace core
 
         virtual ~LogBase();
 
+        LogBase& operator<<(const set_fixed& p)
+        {
+            m_buffer.precision(p.digits);
+            m_buffer.setf(std::ios::fixed);
+            return *this;
+        }
+
         template <class T, class P>
         LogBase& operator<<(const std::chrono::duration<T,P>& value)
         {
-            typedef std::chrono::duration<T,P> dtype;
-            m_buffer << " " << value.count() << duration_suffix<dtype>::value();
+            m_buffer << " " << value.count() << duration_suffix<P>::value();
             return *this;
         }
 

@@ -41,11 +41,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\src;$(SolutionDir)\3rdparty\sfml-2.0-trunk\include;$(SolutionDir)\3rdparty\glm-0.9.4.1;$(SolutionDir)\3rdparty\glew-1.9.0\include;$(SolutionDir)\3rdparty\oglplus-0.23.0\include;$(IncludePath)</IncludePath>
+    <ExecutablePath>$(SolutionDir)\3rdparty\sfml-2.0-trunk\bin;$(SolutionDir)\3rdparty\glew-1.9.0\bin;$(ExecutablePath)</ExecutablePath>
+    <LibraryPath>$(SolutionDir)\3rdparty\sfml-2.0-trunk\lib;$(SolutionDir)\3rdparty\glew-1.9.0\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)src;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\src;$(SolutionDir)\3rdparty\sfml-2.0-trunk\include;$(SolutionDir)\3rdparty\glm-0.9.4.1;$(SolutionDir)\3rdparty\glew-1.9.0\include;$(SolutionDir)\3rdparty\oglplus-0.23.0\include;$(IncludePath)</IncludePath>
+    <ExecutablePath>$(SolutionDir)\3rdparty\sfml-2.0-trunk\bin;$(SolutionDir)\3rdparty\glew-1.9.0\bin;$(ExecutablePath)</ExecutablePath>
+    <LibraryPath>$(SolutionDir)\3rdparty\sfml-2.0-trunk\lib;$(SolutionDir)\3rdparty\glew-1.9.0\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -58,6 +62,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
