@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "core/packet_dispatcher.h"
-#include "core/connection.h"
+#include "core/iconnection.h"
+#include "core/packet.h"
 
 
 namespace core {
@@ -13,7 +14,7 @@ namespace core {
 
 
     // notify all listeners of this protocol
-    void PacketDispatcher::dispatchPacket(const Connection& conn, const PacketPtr& packet) const
+    void PacketDispatcher::dispatchPacket(const IConnection& conn, const PacketPtr& packet) const
     {
         uint16_t protocol = packet->header().protocol;
         auto it = m_listeners.lower_bound(protocol);

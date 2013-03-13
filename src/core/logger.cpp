@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "core/logger.h"
 #include <iomanip>
+#include <boost/bind.hpp>
+
 
 namespace core
 {
@@ -32,7 +34,7 @@ namespace core
             throw std::runtime_error("LogService already running!");
 
         m_sink = sink;
-        m_thread.reset(new std::thread([this]{ run(); }));
+        m_thread.reset(new std::thread(boost::bind(&LogService::run, this)));
     }
 
     void LogService::stop()

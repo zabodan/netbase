@@ -1,4 +1,5 @@
 #pragma once
+#include "core/iconnection.h"
 #include "core/packet.h"
 #include "core/packet_buffer.h"
 #include "core/fast_spinlock.h"
@@ -12,14 +13,17 @@ namespace core {
     class SmartSocket;
 
 
-    class Connection : public std::enable_shared_from_this<Connection>
+    class Connection :
+        public IConnection,
+        public std::enable_shared_from_this<Connection>
     {
     public:
 
         Connection(SmartSocket& socket, const udp::endpoint& peer);
         ~Connection();
 
-        const udp::endpoint& peer() const { return m_peer; }
+        // Implements IConnection::peer
+        const udp::endpoint& peer() const override { return m_peer; }
 
         // makes new job for ioservice: doSend(packet, resendLimit)
         void asyncSend(const PacketPtr& packet, size_t resendLimit = 0);

@@ -42,6 +42,8 @@
     <ClInclude Include="..\src\core\ioservice_resource.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="test_logger.h" />
+    <ClInclude Include="test_packet_dispatcher.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

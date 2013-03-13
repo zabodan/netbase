@@ -5,15 +5,16 @@
 
 namespace core {
 
-    class Connection;
+    class IConnection;
     class Packet;
     typedef std::shared_ptr<Packet> PacketPtr;
 
 
-    struct IProtocolListener
+    class IProtocolListener
     {
+    public:
         virtual ~IProtocolListener() {}
-        virtual void receive(const Connection& conn, const PacketPtr& packet) = 0;
+        virtual void receive(const IConnection& conn, const PacketPtr& packet) = 0;
     };
 
     typedef std::shared_ptr<IProtocolListener> ProtocolListenerPtr;
@@ -23,7 +24,7 @@ namespace core {
     {
     public:
         void registerListener(uint16_t protocol, const ProtocolListenerPtr& listener);
-        void dispatchPacket(const Connection& conn, const PacketPtr& packet) const;
+        void dispatchPacket(const IConnection& conn, const PacketPtr& packet) const;
 
     private:
         // map protocol id to multiple listeners

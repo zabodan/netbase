@@ -9,7 +9,9 @@ namespace core
     using namespace std::chrono;
 
 
-    class ModP1 : public IProtocolListener, public ISocketStateObserver
+    class ModP1 :
+        public IProtocolListener,
+        public ISocketStateObserver
     {
     public:
 
@@ -19,7 +21,7 @@ namespace core
 
     protected:
 
-        void receive(const Connection& conn, const PacketPtr& packet) override
+        void receive(const IConnection& conn, const PacketPtr& packet) override
         {
             const PacketHeader& header = packet->header();
             LogDebug() << "processed packet" << header.seqNum << "with protocol" << header.protocol << "from" << conn.peer();

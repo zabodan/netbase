@@ -32,28 +32,28 @@ namespace core {
     {
     protected:
 
-        void onConnect(const ConnectionPtr& conn)
+        void onConnect(const ConnectionPtr& conn) override
         {
             LogInfo() << "connection established with" << conn->peer();
         }
 
-        void onPeerDisconnect(const ConnectionPtr& conn)
+        void onPeerDisconnect(const ConnectionPtr& conn) override
         {
             LogInfo() << "peer" << conn->peer() << "disconnected";
         }
 
-        void onBadPacketSize(const udp::endpoint& peer, size_t size)
+        void onBadPacketSize(const udp::endpoint& peer, size_t size) override
         {
             LogError() << "received packet with bad size" << size << "from" << peer;
         }
 
-        void onError(const ConnectionPtr& conn, const boost::system::error_code& error)
+        void onError(const ConnectionPtr& conn, const boost::system::error_code& error) override
         {
             LogError() << "error on connection with" << conn->peer();
             LogError() << "  category:" << error.category().name() << "id:" << error.value() << "message:" << error.message();
         }
 
-        virtual void onSocketShutdown()
+        void onSocketShutdown() override
         {
             LogInfo() << "socket is shutting down";
         }
