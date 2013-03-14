@@ -31,7 +31,7 @@ namespace core {
 
     SmartSocket::~SmartSocket()
     {
-        notifyObservers([](ISocketStateObserver& observer){ observer.onSocketShutdown(); });
+        notifyObservers(&ISocketStateObserver::onSocketShutdown);
         LogTrace() << "SmartSocket::~SmartSocket";
     }
 
@@ -67,7 +67,7 @@ namespace core {
         {
             if (error == error::message_size || (!error && recvBytes < sizeof(PacketHeader)))
             {
-                notifyObservers([=](ISocketStateObserver& observer){ observer.onBadPacketSize(m_recvPeer, recvBytes); });
+                notifyObservers(&ISocketStateObserver::onBadPacketSize, m_recvPeer, recvBytes);
             }
             else if (error)
             {
@@ -78,12 +78,12 @@ namespace core {
                         case error::connection_aborted:
                         case error::connection_refused:
                         case error::connection_reset:
-                            notifyObservers([&](ISocketStateObserver& observer){ observer.onPeerDisconnect(conn); });
+                            notifyObservers(&ISocketStateObserver::onPeerDisconnect, conn);
                             conn->markDead(true);
                             break;
                 
                         default:
-                            notifyObservers([&](ISocketStateObserver& observer){ observer.onError(conn, error); });
+                            notifyObservers(&ISocketStateObserver::onError, conn, error);
                             break;
                     }
             }
@@ -122,7 +122,8 @@ namespace core {
 
     void SmartSocket::sendEveryone(const PacketPtr& packet, size_t resendLimit)
     {
-        m_connections.for_each_value([&](const ConnectionPtr& conn){
+        m_connections.for_each_value([&](const ConnectionPtr& conn)
+        {
             if (!conn->isDead())
                 conn->asyncSend(std::make_shared<Packet>(*packet), resendLimit);
         });
@@ -145,18 +146,22 @@ namespace core {
         auto timeoutStart = system_clock::now() - cConnectionTimeout;
         size_t deadCount = 0;
 
-        m_connections.for_each_value([&](const ConnectionPtr& conn){
+        m_connections.for_each_value([&](const ConnectionPtr& conn)
+        {
             if (conn->lastActivityTime() < timeoutStart)
             {
                 LogDebug() << "connection with" << conn->peer() << "timed out";
                 conn->markDead(true);
             }
+
             if (conn->isDead())
                 ++deadCount;
         });
 
         // remove dead connections -- slow path, but rare (write lock)
         if (deadCount > 0)
+        {
             m_connections.remove_if([](const ConnectionPtr& conn){ return conn->isDead(); });
+        }
     }
 }

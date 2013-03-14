@@ -44,6 +44,7 @@
     </ClInclude>
     <ClInclude Include="test_logger.h" />
     <ClInclude Include="test_packet_dispatcher.h" />
+    <ClInclude Include="test_observable.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />

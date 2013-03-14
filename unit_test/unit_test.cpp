@@ -4,6 +4,7 @@
 
 #include "test_logger.h"
 #include "test_packet_dispatcher.h"
+#include "test_observable.h"
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
@@ -136,5 +137,34 @@ BOOST_AUTO_TEST_CASE(packet_dispatcher)
     BOOST_CHECK(!listener1->tryRelease(tmp));
     BOOST_CHECK(!listener2->tryRelease(tmp));
     BOOST_CHECK(!listener3->tryRelease(tmp));
+}
 
+
+BOOST_AUTO_TEST_CASE(observable_pattern)
+{
+    auto so1 = std::make_shared<TestSimpleObserver>();
+    auto so2 = std::make_shared<TestSimpleObserver>();
+    auto co1 = std::make_shared<TestComplexObserver>();
+    auto co2 = std::make_shared<TestComplexObserver>();
+    TestSubject subject;
+
+    subject.addObserver(so1);
+    subject.addObserver(so2);
+    subject.addObserver(co1);
+    subject.addObserver(co2);
+
+    subject.FireSimpleEvent();
+    BOOST_CHECK(so1->simpleEventFired());
+    BOOST_CHECK(so2->simpleEventFired());
+
+    std::string outStr, inStr = "error";
+    subject.FireErrorEvent(inStr);
+    BOOST_CHECK(co1->tryGetError(outStr) && outStr == inStr);
+    BOOST_CHECK(co2->tryGetError(outStr) && outStr == inStr);
+
+    std::tuple<int, int, double> outTup, inTup = std::make_tuple(1, 2, 3.0);
+    subject.removeObserver(co1);
+    subject.FireCustomEvent(std::get<0>(inTup), std::get<1>(inTup), std::get<2>(inTup));
+    BOOST_CHECK(!co1->tryGetTuple(outTup));
+    BOOST_CHECK(co2->tryGetTuple(outTup) && outTup == inTup);
 }

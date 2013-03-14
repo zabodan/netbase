@@ -65,7 +65,7 @@ namespace core {
         LogTrace() << "[+] Connection::handleSend";
         if (error)
         {
-            m_socket.notifyObservers([&](ISocketStateObserver& observer){ observer.onError(shared_from_this(), error); });
+            m_socket.notifyObservers(&ISocketStateObserver::onError, shared_from_this(), error);
             removeUndeliveredPacket(packet->header().seqNum);
         }
         LogTrace() << "[-] Connection::handleSend";
